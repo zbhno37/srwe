@@ -64,13 +64,18 @@ def load_map(filename):
     return id_map
 
 def alias_to_name(filename):
+    count = 1
+    log('loading id_map...')
     id_map = load_map('../../paper/data/freebase/id_map.1gram')
     fout = file('../../paper/data/freebase/alias_pair', 'w')
+    log('mapping alias...')
     with open(filename) as fin:
         for line in fin:
             arr = line.strip().split('\t')
             if arr[0] not in id_map: continue
             fout.write('%s\t%s\n' % (id_map[arr[0]], arr[1]))
+            if count % 1000 == 0:
+                log(count)
     fout.close()
 
 def main():
