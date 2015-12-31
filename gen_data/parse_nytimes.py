@@ -15,6 +15,7 @@ def parse_xml():
         for month in range(1, 13):
             ms = '%02d' % month
             path = os.path.join(BASE_DIR, year, ms)
+            if not os.path.isdir(path): continue
             days = os.listdir(path)
             for day in days:
                 day_path = os.path.join(path, day)
