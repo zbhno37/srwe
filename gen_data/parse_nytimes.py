@@ -31,10 +31,11 @@ def parse_xml():
                     if len(content) == 0: continue
                     text = '\n'.join([x.strip() for x in content[0].itertext() if x.strip()])
                     fout.write('%s\n%s\n' % (title_text.encode('utf-8'), text.encode('utf-8')))
-                    if count > 10:
-                        exit()
+                    if count % 10000 == 0:
+                        log(count)
                     count += 1
     fout.close()
+    log('total:%d' % total)
 def main():
     parse_xml()
 
