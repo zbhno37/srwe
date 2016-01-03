@@ -36,7 +36,7 @@ def parse_xml():
                         log(count)
                     count += 1
     fout.close()
-    log('total:%d' % total)
+    log('total:%d' % count)
 def main():
     parse_xml()
 

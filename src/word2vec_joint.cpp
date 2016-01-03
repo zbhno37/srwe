@@ -1180,7 +1180,7 @@ void *TrainPPDBVectorThread(void *id) {
         }
         if((ep + 1) % 10 == 0) if (ppeval != NULL)
         {
-            evaluateMRRout(10000, ppeval);
+            //evaluateMRRout(10000, ppeval);
         }
         //next_random = next_random * (unsigned long long)25214903917 + 11;
         b = next_random % window;
@@ -1276,7 +1276,7 @@ void *TrainPPDBVectorThreadNew(void *id) {
         }
         if((ep + 1) % 10 == 0 && (((ep + 1) / 10)) % num_thread_pmm == ((long long)id - num_threads) ) if (ppeval != NULL)
         {
-            evaluateMRRout(10000, ppeval);
+            //evaluateMRRout(10000, ppeval);
         }
         //next_random = next_random * (unsigned long long)25214903917 + 11;
         b = next_random % window;
@@ -1340,7 +1340,7 @@ void TrainModel() {
     if (negative > 0) InitUnigramTable();
     start = clock();
     BuildUpperDict();
-    evaluateMRRout(10000, ppeval);
+    //evaluateMRRout(10000, ppeval);
     //for (a = 0; a < num_threads; a++) pthread_create(&pt[a], NULL, TrainModelRegThread, (void *)a);
 //    for (int ep = 0; ep < epochs; ep++) {
 //        //TrainModelRegNCEThread(0);
@@ -1441,8 +1441,10 @@ int main(int argc, char **argv) {
         //strcpy(train_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/text8.wordlist1.small");
         //strcpy(output_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.noreg.bin");
         //strcpy(output_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.noreg.bin.oldtype");
-        strcpy(train_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/text8.wordlist100");
-        strcpy(output_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.regonly.bin");
+        //strcpy(train_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/text8.wordlist100");
+        strcpy(train_file, "../../paper/data/nytimes/nytimes_content");
+        //strcpy(output_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.regonly.bin");
+        strcpy(output_file, "./model/nytimes.w2v.model");
         cbow = 1;
         layer1_size = 100;
         window = 5;
@@ -1461,13 +1463,14 @@ int main(int argc, char **argv) {
         //sample = 0;
 
         weight_tying = 0;
-        strcpy(pp_file, "/Users/gflfof/Desktop/new work/phrase_embedding/PPDB/ppdb-1.0-s-lexical.wordlist100");
+        //strcpy(pp_file, "/Users/gflfof/Desktop/new work/phrase_embedding/PPDB/ppdb-1.0-s-lexical.wordlist100");
+        strcpy(pp_file, "../../paper/data/srwe_model/semantic_pair");
         reg_in = 0;
         reg_out = 0;
         word2vec = 1;
         pretrain = 0;
-        strcpy(pretrain_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.noreg.bin.oldtype");
-        strcpy(train_file2, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/trainword.new");
+        //strcpy(pretrain_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.noreg.bin.oldtype");
+        //strcpy(train_file2, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/trainword.new");
         epochs = 300;
     }
 
@@ -1517,7 +1520,8 @@ int main(int argc, char **argv) {
 
     //pp = new Paraphrase2("/Users/gflfof/Desktop/new work/phrase_embedding/PPDB/ppdb-1.0-s-lexical.wordlist100");
     pp = new Paraphrase2(pp_file);
-    ppeval = new Paraphrase("/export/a04/moyu/gigaword_data/ppdb/new/ppdb-1.0-s-lexical.dev");
+    ppeval = NULL;
+    //ppeval = new Paraphrase("/export/a04/moyu/gigaword_data/ppdb/new/ppdb-1.0-s-lexical.dev");
     //ppeval = new Paraphrase(pp_file);
     //pp = new Paraphrase("/Users/gflfof/Desktop/new work/phrase_embedding/trunk/ppdb-1.0-s-lexical.wordlist1");
     //pp = new Paraphrase2("/Users/gflfof/Desktop/new work/phrase_embedding/trunk/ppdb-1.0-s-lexical.wordlist1");
@@ -1529,8 +1533,10 @@ int main(int argc, char **argv) {
     cout << word_count_actual << endl;
     cout << lambda << endl;
     cout << pp_count_actual << endl;
-
-    evaluateMRRout(10000, ppeval);
+    //baihan
+    //evaluateMRRout(10000, ppeval);
+    //
+    //
     //Paraphrase* ppeval = new Paraphrase("/Users/gflfof/Desktop/new work/phrase_embedding/PPDB/ppdb-1.0-s-lexical.wordlist100");
     //Paraphrase* ppeval = new Paraphrase("/Users/gflfof/Desktop/new work/phrase_embedding/PPDB/ppdb-1.0-s-lexical.wordlist100");
     //evaluate("/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.noreg", 10000, pp);
