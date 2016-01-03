@@ -54,7 +54,7 @@ def find_most_similarity(word, model):
         if word == w: continue
         heap.push((similarity(model[word], model[w]), w))
     heap.sort()
-    return heap
+    return heap.arr
 
 def main():
     model = load_w2v_model('../../paper/data/srwe_model/nytimes.w2v.model')
