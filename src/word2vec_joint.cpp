@@ -1444,7 +1444,7 @@ int main(int argc, char **argv) {
         //strcpy(train_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/text8.wordlist100");
         strcpy(train_file, "../../paper/data/nytimes/nytimes_content");
         //strcpy(output_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.regonly.bin");
-        strcpy(output_file, "./model/nytimes.w2v.model");
+        strcpy(output_file, "../../paper/data/srwe_model/nytimes.w2v.model");
         cbow = 1;
         layer1_size = 100;
         window = 5;
@@ -1453,7 +1453,7 @@ int main(int argc, char **argv) {
         sample = 1e-3;
         num_threads = 2;
         num_thread_pmm = 2;
-        binary = 1;
+        binary = 0;
         //lambda = 4;
         lambda = 0.2;
 
