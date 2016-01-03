@@ -1,5 +1,6 @@
 import heapq
 import logging
+import math
 
 logging.basicConfig(format='%(asctime)s\t%(message)s', level=logging.INFO)
 
@@ -42,8 +43,8 @@ def load_w2v_model(model_file):
 
 def similarity(v1, v2):
     inner = sum([v1[i] * v2[i] for i in range(len(v1))])
-    sum1 = sum([v1[i] * v1[i] for i in range(len(v1))])
-    sum2 = sum([v2[i] * v2[i] for i in range(len(v2))])
+    sum1 = math.sqrt(sum([v1[i] * v1[i] for i in range(len(v1))]))
+    sum2 = math.sqrt(sum([v2[i] * v2[i] for i in range(len(v2))]))
     if sum1 == 0 or sum2 == 0:
         return -1
     return inner * 1.0 / (sum1 * sum2)
