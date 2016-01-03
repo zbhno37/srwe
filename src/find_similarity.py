@@ -23,7 +23,7 @@ class MinSizeHeap:
         return heapq.heappop(self.arr)
 
     def sort(self):
-        self.arr.sort()
+        self.arr.sort(reverse=True)
 
 def load_w2v_model(model_file):
     model = {}
