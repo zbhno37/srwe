@@ -7,6 +7,41 @@ def log(logstr, writer = sys.stdout, inline = False):
     writer.write("%s\t%s%s" % (str(datetime.datetime.now()), logstr, '\r' if inline else '\n'))
     writer.flush()
 
+def clean_tag():
+    fout = file('../../paper/freebase/instance.all.clean', 'w')
+    ferr = file('../../paper/freebase/instance.all.err', 'w')
+    relation = 'type.type.instance>'
+    ns_pattern = re.compile(r'<http://rdf.freebase.com/ns/(.*)>')
+
+    with open('../../paper/data/freebase/instance.all.tag') as fin:
+        for line in fin:
+            arr = line.strip().split('\t')
+            if len(arr) != 4 or not arr[1].endswith(relation):
+                ferr.write('%s\n' % line)
+                continue
+            topic = ns_pattern.search(arr[0]).groups()[0]
+            mid = ns_pattern.search(arr[2]).groups()[0]
+            fout.write('%s\t%s\n' % (topic, mid))
+    fout.close()
+
+def extract_instance():
+    fin = gzip.open('../../paper/data/freebase/freebase-rdf-latest.gz.1')
+    fout = file('../../paper/data/freebase/os_extract', 'w')
+
+    relation = 'type.type.instance'
+
+    count = 0
+    total = 0
+    for line in fin:
+        if relation in line:
+            fout.write('%s' % line)
+            count += 1
+        if total % 1000000 == 0:
+            log('total:%d, count:%d' % (total, count))
+        total += 1
+    fout.close()
+    log('total:%d, count:%d' % (total, count))
+
 def filter():
     fin = gzip.open('../../paper/data/freebase/freebase-rdf-latest.gz.1')
     fout = file('../../paper/data/freebase/mid_name', 'w')
@@ -80,7 +115,9 @@ def alias_to_name(filename):
 
 def main():
     #filter_1_gram()
-    alias_to_name('../../paper/data/freebase/alias_1gram')
+    #alias_to_name('../../paper/data/freebase/alias_1gram')
+    #extract()
+    clean_tag()
 
 if __name__ == '__main__':
     main()
