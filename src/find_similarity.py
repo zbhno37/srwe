@@ -61,12 +61,20 @@ def main():
     model = load_w2v_model('../../paper/data/srwe_model/nytimes.w2v.model')
     while True:
         query = raw_input('input query word:\n')
-        if query not in model:
-            print '%s not in vocab.' % query
+        if not query:
             continue
-        res = find_most_similarity(query, model)
-        for sim, word in res:
-            print '%s\t%lf' % (word, sim)
+        arr = query.strip().split(' ')
+        if len(arr) != 2: continue
+        w1, w2 = arr
+        if w1 not in model or w2 not in model:
+            continue
+        print '%s,%s:%lf' % (w1, w2, similarity(model[w1], model[w2]))
+        #if query not in model:
+            #print '%s not in vocab.' % query
+            #continue
+        #res = find_most_similarity(query, model)
+        #for sim, word in res:
+            #print '%s\t%lf' % (word, sim)
 
 if __name__ == '__main__':
     main()
