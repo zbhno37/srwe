@@ -8,11 +8,11 @@ def log(logstr, writer = sys.stdout, inline = False):
     writer.flush()
 
 def clean_tag():
-    fout = file('../../paper/freebase/instance.all.clean', 'w')
-    ferr = file('../../paper/freebase/instance.all.err', 'w')
+    fout = file('../../paper/data/freebase/instance.all.clean', 'w')
+    ferr = file('../../paper/data/freebase/instance.all.err', 'w')
     relation = 'type.type.instance>'
     ns_pattern = re.compile(r'<http://rdf.freebase.com/ns/(.*)>')
-
+    count = 1
     with open('../../paper/data/freebase/instance.all.tag') as fin:
         for line in fin:
             arr = line.strip().split('\t')
@@ -22,6 +22,9 @@ def clean_tag():
             topic = ns_pattern.search(arr[0]).groups()[0]
             mid = ns_pattern.search(arr[2]).groups()[0]
             fout.write('%s\t%s\n' % (topic, mid))
+            if count % 100000 == 0:
+                log(count)
+            count += 1
     fout.close()
 
 def extract_instance():
