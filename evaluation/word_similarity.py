@@ -14,7 +14,7 @@ def load_standard(filename):
             if line.strip().startswith('#'): continue
             arr = line.strip().split('\t')
             if len(arr) != 4: continue
-            word_pair.append((arr[1], arr[2]))
+            word_pair.append((arr[1].lower(), arr[2].lower()))
             simi.append(float(arr[3]))
     return word_pair, simi
 
@@ -28,7 +28,7 @@ def main():
             logging.error('%s not in vocab.' % pair[0] if pair[0] not in model else pair[1])
             new_simi.append(0.0)
             continue
-    new_simi.append(similarity(model[pair[0]], model[pair[1]]))
+        new_simi.append(similarity(model[pair[0]], model[pair[1]]))
     res = scipy.stats.spearmanr(simi, new_simi)
     print res
 
