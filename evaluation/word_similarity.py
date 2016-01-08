@@ -1,4 +1,4 @@
-import scipy
+import scipy.stats
 import sys
 sys.path.append('../src')
 from utils import load_w2v_model, similarity
@@ -21,16 +21,16 @@ def load_standard(filename):
 def main():
     word_pair, simi = load_standard('./wordsim353_annotator1.txt')
     #model = load_w2v_model('../../paper/word2vec/vec.txt', logging)
-    model = load_w2v_model('../../paper/data/srwe_model/nytimes.w2v.model', logging)
+    model = load_w2v_model('../../paper/word2vec/vec.wiki.small.txt', logging)
     new_simi = []
     for pair in word_pair:
         if pair[0] not in model or pair[1] not in model:
             logging.error('%s not in vocab.' % pair[0] if pair[0] not in model else pair[1])
             new_simi.append(0.0)
             continue
-        new_simi.append(similarity(model[pair[0]], model[pair[1]]))
-        res = scipy.stats.spearmanr(simi, new_simi)
-        print res
+    new_simi.append(similarity(model[pair[0]], model[pair[1]]))
+    res = scipy.stats.spearmanr(simi, new_simi)
+    print res
 
 if __name__ == '__main__':
     main()
