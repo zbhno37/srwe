@@ -141,6 +141,18 @@ def relation_to_name(filename):
     fout.close()
     ferr.close()
 
+def split_relation(filename):
+    fouts = {}
+    with open(filename) as fin:
+        for line in fin:
+            arr = line.strip().split('\t')
+            if len(arr) != 2: continue
+            relation = arr[0].split('.')
+            if relation[0] not in fouts:
+                fouts[relation[0]] = file('../../paper/data/freebase/split/%s' % relation[0], 'w')
+            fouts[relation[0]].write('%s\t%s\n' % (arr[0], arr[1]))
+    for fout in fouts:
+        fout.close()
 def main():
     #filter_1_gram()
     #alias_to_name('../../paper/data/freebase/alias_1gram')

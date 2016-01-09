@@ -48,3 +48,15 @@ def load_w2v_model(model_file, logging = None):
             count += 1
     return model
 
+def is_version(s):
+    try:
+        float(s)
+        return True
+    except:
+        arr = s.strip().split('.')
+        for seg in arr:
+            seg = seg.decode('utf-8')
+            if not (seg.isdigit() or seg == 'x' or seg == 'X'):
+                return False
+    return True
+
