@@ -45,9 +45,11 @@ def extract_instance():
     fout.close()
     log('total:%d, count:%d' % (total, count))
 
-def filter():
+def filter_name():
+    name_pattern = re.compile(r'\"(.*)\"@en')
+    mid_pattern = re.compile(r'<http://rdf.freebase.com/ns/(.*)>')
     fin = gzip.open('../../paper/data/freebase/freebase-rdf-latest.gz.1')
-    fout = file('../../paper/data/freebase/mid_name', 'w')
+    fout = file('../../paper/data/freebase/mid_name.clean', 'w')
 
     relation = '<http://rdf.freebase.com/ns/type.object.name>'
     language = '@en'
@@ -58,7 +60,11 @@ def filter():
         arr = line.strip().split('\t')
         total += 1
         if len(arr) >= 3 and relation in arr[1] and arr[2].endswith(language):
-            fout.write(line)
+            name = name_pattern.search(arr[2])
+            if not name: continue
+            name = name.groups()[0]
+            mid = mid_pattern.search(arr[0]).groups()[0]
+            fout.write('%s\t%s\n' % (mid, name))
             fout.flush()
             count += 1
             log(count, inline=False)
@@ -139,7 +145,8 @@ def main():
     #filter_1_gram()
     #alias_to_name('../../paper/data/freebase/alias_1gram')
     #extract()
-    clean_tag()
+    #clean_tag()
+    filter_name()
 
 if __name__ == '__main__':
     main()
