@@ -116,6 +116,25 @@ def alias_to_name(filename):
                 log(count)
     fout.close()
 
+def relation_to_name(filename):
+    count = 1
+    log('loading id_map...')
+    id_map = load_map('../../paper/data/freebase/mid_name')
+    fout = file('../../paper/data/freebase/instance.all.name', 'w')
+    ferr = file('../../paper/data/freebase/instance.miss.err', 'w')
+    log('mapping instances...')
+    with open(filename) as fin:
+        for line in fin:
+            arr = line.strip().split('\t')
+            if arr[1] not in id_map:
+                ferr.write('%s\n' % arr[1])
+                continue
+            fout.write('%s\t%s\n' % (arr[0], id_map[arr[1]]))
+            if count % 1000 == 0:
+                log(count)
+    fout.close()
+    ferr.close()
+
 def main():
     #filter_1_gram()
     #alias_to_name('../../paper/data/freebase/alias_1gram')
