@@ -155,8 +155,8 @@ def split_relation(filename):
             if count % 10000 == 0:
                 log(count)
             count += 1
-    for fout in fouts:
-        fout.close()
+    for name in fouts:
+        fouts[name].close()
 def main():
     #filter_1_gram()
     #alias_to_name('../../paper/data/freebase/alias_1gram')
