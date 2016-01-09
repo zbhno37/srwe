@@ -142,6 +142,7 @@ def relation_to_name(filename):
     ferr.close()
 
 def split_relation(filename):
+    count = 1
     fouts = {}
     with open(filename) as fin:
         for line in fin:
@@ -151,6 +152,9 @@ def split_relation(filename):
             if relation[0] not in fouts:
                 fouts[relation[0]] = file('../../paper/data/freebase/split/%s' % relation[0], 'w')
             fouts[relation[0]].write('%s\t%s\n' % (arr[0], arr[1]))
+            if count % 10000 == 0:
+                log(count)
+            count += 1
     for fout in fouts:
         fout.close()
 def main():
@@ -158,7 +162,8 @@ def main():
     #alias_to_name('../../paper/data/freebase/alias_1gram')
     #extract()
     #clean_tag()
-    filter_name()
+    #filter_name()
+    split_relation('../../paper/data/freebase/instance.all.name')
 
 if __name__ == '__main__':
     main()
