@@ -954,7 +954,7 @@ void *TrainModelRegNCEThread(void *id) {
     //train_pp_total *= 1;
     //file_size = ftell(fi);
 
-    for (int ep = 0; ep < 1; ep++) {
+    for (int ep = 0; ep < 5; ep++) {
         fseek(fi, file_size / (long long)num_threads * (long long)id, SEEK_SET);
 
         while (1) {
