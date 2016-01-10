@@ -1,7 +1,9 @@
 import gzip
 import sys
+sys.path.append('../src')
 import datetime
 import re
+from utils import is_version
 
 def log(logstr, writer = sys.stdout, inline = False):
     writer.write("%s\t%s%s" % (str(datetime.datetime.now()), logstr, '\r' if inline else '\n'))
@@ -151,7 +153,14 @@ def split_relation(filename):
             relation = arr[0].split('.')
             if relation[0] not in fouts:
                 fouts[relation[0]] = file('../../paper/data/freebase/split/%s' % relation[0], 'w')
-            fouts[relation[0]].write('%s\t%s\n' % (arr[0], arr[1]))
+            # rules to extract entity name
+            name = None
+            parts = arr[1].split(' ')
+            if len(parts) == 1: name = arr[1]
+            if len(parts) == 2 and is_version(parts[1]): name = parts[0]
+            # rules end
+            if not name: continue
+            fouts[relation[0]].write('%s\t%s\n' % (arr[0], name.lower()))
             if count % 10000 == 0:
                 log(count)
             count += 1
