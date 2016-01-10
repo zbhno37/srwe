@@ -62,11 +62,12 @@ def is_version(s):
 
 def load_wiki_dict(filename):
     # word \t freq
-    word_set = set()
+    word_set = {}
     with open(filename) as fin:
         for line in fin:
             arr = line.strip().split('\t')
-            if int(arr[1]) >= 5:
-                word_set.add(arr[0])
+            if int(arr[1]) >= 3:
+                #word_set.add(arr[0])
+                word_set[arr[0]] = int(arr[1])
             else: break
     return word_set
