@@ -173,7 +173,7 @@ def split_relation(filename):
             vocab_in_wiki_count[relation[0]]['total'] += 1
             if name in wiki_dict: vocab_in_wiki_count[relation[0]]['hit'] += 1
             else: continue
-            fouts[relation[0]].write('%s\t%s\n' % (arr[0], name))
+            fouts[relation[0]].write('%s\t%s\t%d\n' % (arr[0], name, wiki_dict[name]))
     fres = file('./hit_rate', 'w')
     for name in fouts:
         fouts[name].close()
