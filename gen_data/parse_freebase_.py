@@ -155,7 +155,7 @@ def split_relation(filename):
             if len(arr) != 2: continue
             relation = arr[0].split('.')
             if relation[0] not in fouts:
-                fouts[relation[0]] = file('../../paper/data/freebase/split/%s' % relation[0], 'w')
+                fouts[relation[0]] = file('../../paper/data/freebase/split_wiki_words/%s' % relation[0], 'w')
                 vocab_in_wiki_count[relation[0]] = {}
                 vocab_in_wiki_count[relation[0]]['total'] = 0
                 vocab_in_wiki_count[relation[0]]['hit'] = 0
@@ -167,16 +167,22 @@ def split_relation(filename):
             # rules end
             if not name: continue
             name = name.lower()
+            #if name in wiki_dict: vocab_in_wiki_count[relation[0]]['hit'] += 1
             if name in wiki_dict: vocab_in_wiki_count[relation[0]]['hit'] += 1
+            else: continue
             vocab_in_wiki_count[relation[0]]['total'] += 1
             fouts[relation[0]].write('%s\t%s\n' % (arr[0], name))
             if count % 10000 == 0:
                 log(count)
             count += 1
+    fres = file('./hit_rate', 'w')
     for name in fouts:
         fouts[name].close()
         count = vocab_in_wiki_count[name]
-        print '%s\thit:%d\ttotal:%d\trate:%lf' % (name, count['hit'], count['total'], 1.0 * count['hit'] / (count['total'] if count['total'] != 0 else 1))
+        to_write = '%s\thit:%d\ttotal:%d\trate:%lf\n' % (name, count['hit'], count['total'], 1.0 * count['hit'] / (count['total'] if count['total'] != 0 else 1))
+        print to_write
+        fres.write(to_write)
+    fres.close()
 def main():
     #filter_1_gram()
     #alias_to_name('../../paper/data/freebase/alias_1gram')
