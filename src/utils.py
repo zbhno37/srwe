@@ -67,6 +67,6 @@ def load_wiki_dict(filename):
         for line in fin:
             arr = line.strip().split('\t')
             if int(arr[1]) >= 5:
-                word_set.add(arr[1])
+                word_set.add(arr[0])
             else: break
     return word_set
