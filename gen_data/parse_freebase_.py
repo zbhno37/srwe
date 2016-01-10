@@ -175,7 +175,7 @@ def split_relation(filename):
             count += 1
     for name in fouts:
         fouts[name].close()
-        count = vocab_in_wiki_count[relation[0]]
+        count = vocab_in_wiki_count[name]
         print '%s\thit:%d\tmiss:%d\trate:%lf' % (name, count['hit'], count['total'], 1.0 * count['hit'] / count['total'])
 def main():
     #filter_1_gram()
