@@ -151,6 +151,9 @@ def split_relation(filename):
     vocab_in_wiki_count = {}
     with open(filename) as fin:
         for line in fin:
+            if count % 10000 == 0:
+                log(count)
+            count += 1
             arr = line.strip().split('\t')
             if len(arr) != 2: continue
             relation = arr[0].split('.')
@@ -167,14 +170,10 @@ def split_relation(filename):
             # rules end
             if not name: continue
             name = name.lower()
-            #if name in wiki_dict: vocab_in_wiki_count[relation[0]]['hit'] += 1
+            vocab_in_wiki_count[relation[0]]['total'] += 1
             if name in wiki_dict: vocab_in_wiki_count[relation[0]]['hit'] += 1
             else: continue
-            vocab_in_wiki_count[relation[0]]['total'] += 1
             fouts[relation[0]].write('%s\t%s\n' % (arr[0], name))
-            if count % 10000 == 0:
-                log(count)
-            count += 1
     fres = file('./hit_rate', 'w')
     for name in fouts:
         fouts[name].close()
@@ -189,7 +188,7 @@ def main():
     #extract()
     #clean_tag()
     #filter_name()
-    split_relation('../../paper/data/freebase/instance.all.sample')
+    split_relation('../../paper/data/freebase/instance.all.name')
 
 if __name__ == '__main__':
     main()
