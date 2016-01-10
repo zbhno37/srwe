@@ -3,7 +3,8 @@ import sys
 sys.path.append('../src')
 import datetime
 import re
-from utils import is_version
+from utils import is_version, load_wiki_dict
+from collections import defaultdict
 
 def log(logstr, writer = sys.stdout, inline = False):
     writer.write("%s\t%s%s" % (str(datetime.datetime.now()), logstr, '\r' if inline else '\n'))
@@ -144,8 +145,10 @@ def relation_to_name(filename):
     ferr.close()
 
 def split_relation(filename):
+    wiki_dict = load_wiki_dict('../../paper/data/wiki/wiki_corpus.vocab')
     count = 1
     fouts = {}
+    vocab_in_wiki_count = {}
     with open(filename) as fin:
         for line in fin:
             arr = line.strip().split('\t')
@@ -153,6 +156,9 @@ def split_relation(filename):
             relation = arr[0].split('.')
             if relation[0] not in fouts:
                 fouts[relation[0]] = file('../../paper/data/freebase/split/%s' % relation[0], 'w')
+                vocab_in_wiki_count[relation[0]] = {}
+                vocab_in_wiki_count[relation[0]]['total'] = 0
+                vocab_in_wiki_count[relation[0]]['hit'] = 0
             # rules to extract entity name
             name = None
             parts = arr[1].split(' ')
@@ -160,19 +166,24 @@ def split_relation(filename):
             if len(parts) == 2 and is_version(parts[1]): name = parts[0]
             # rules end
             if not name: continue
-            fouts[relation[0]].write('%s\t%s\n' % (arr[0], name.lower()))
+            name = name.lower()
+            if name in wiki_dict: vocab_in_wiki_count[relation[0]]['hit'] += 1
+            vocab_in_wiki_count[relation[0]]['total'] += 1
+            fouts[relation[0]].write('%s\t%s\n' % (arr[0], name))
             if count % 10000 == 0:
                 log(count)
             count += 1
     for name in fouts:
         fouts[name].close()
+        count = vocab_in_wiki_count[relation[0]]
+        print '%s\thit:%d\tmiss:%d\trate:%lf' % (name, count['hit'], count['total'], 1.0 * count['hit'] / count['total'])
 def main():
     #filter_1_gram()
     #alias_to_name('../../paper/data/freebase/alias_1gram')
     #extract()
     #clean_tag()
     #filter_name()
-    split_relation('../../paper/data/freebase/instance.all.name')
+    split_relation('../../paper/data/freebase/instance.all.sample')
 
 if __name__ == '__main__':
     main()
