@@ -176,7 +176,7 @@ def split_relation(filename):
     for name in fouts:
         fouts[name].close()
         count = vocab_in_wiki_count[name]
-        print '%s\thit:%d\tmiss:%d\trate:%lf' % (name, count['hit'], count['total'], 1.0 * count['hit'] / count['total'])
+        print '%s\thit:%d\ttotal:%d\trate:%lf' % (name, count['hit'], count['total'], 1.0 * count['hit'] / (count['total'] if count['total'] != 0 else 1))
 def main():
     #filter_1_gram()
     #alias_to_name('../../paper/data/freebase/alias_1gram')
