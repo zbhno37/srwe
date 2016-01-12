@@ -4,7 +4,7 @@ sys.path.append('../src')
 import datetime
 import re
 from utils import is_version, load_wiki_dict
-from collections import defaultdict
+import os
 
 def log(logstr, writer = sys.stdout, inline = False):
     writer.write("%s\t%s%s" % (str(datetime.datetime.now()), logstr, '\r' if inline else '\n'))
@@ -182,13 +182,37 @@ def split_relation(filename):
         print to_write
         fres.write(to_write)
     fres.close()
+
+def aggregate_topic(path):
+    target_topic = [
+        "astronomy",
+        "biology",
+        "boats",
+        "chemistry",
+        "computer",
+        "fashion",
+        "food",
+        "geology",
+        "interests",
+        "language",
+    ]
+    fout = file('../../paper/data/srwe_model//freebase.10.relation', 'w')
+    for topic in target_topic:
+        log('processing %s' % topic)
+        with open(os.path.join(path, topic)) as fin:
+            for line in fin:
+                arr = line.strip().split('\t')
+                fout.write('%s\t%s\t%s\n' % (arr[1], 'type_of_%s' % topic, topic))
+    fout.close()
+
 def main():
     #filter_1_gram()
     #alias_to_name('../../paper/data/freebase/alias_1gram')
     #extract()
     #clean_tag()
     #filter_name()
-    split_relation('../../paper/data/freebase/instance.all.name')
+    #split_relation('../../paper/data/freebase/instance.all.name')
+    aggregate_topic('../../paper/data/freebase/split_wiki_words/')
 
 if __name__ == '__main__':
     main()

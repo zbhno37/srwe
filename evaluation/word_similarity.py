@@ -5,6 +5,7 @@ from utils import load_w2v_model, similarity
 
 import logging
 logging.basicConfig(format='%(asctime)s\t%(message)s', level=logging.INFO)
+import random
 
 def load_standard(filename):
     word_pair = []
@@ -21,7 +22,7 @@ def load_standard(filename):
 def main():
     word_pair, simi = load_standard('./wordsim353_annotator1.txt')
     #model = load_w2v_model('../../paper/word2vec/vec.txt', logging)
-    model = load_w2v_model('../../paper/word2vec/vec.wiki.small.txt', logging)
+    model = load_w2v_model('../../paper/word2vec/wiki_small.w2v.model', logging)
     new_simi = []
     for pair in word_pair:
         if pair[0] not in model or pair[1] not in model:
