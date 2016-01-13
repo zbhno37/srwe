@@ -970,7 +970,7 @@ void *TrainModelRegNCEThread(void *id) {
     //train_pp_total *= 1;
     //file_size = ftell(fi);
 
-    for (int ep = 0; ep < 5; ep++) {
+    for (int ep = 0; ep < 1; ep++) {
         fseek(fi, file_size / (long long)num_threads * (long long)id, SEEK_SET);
 
         while (1) {
@@ -1382,13 +1382,20 @@ void TrainModel() {
     //for (a = 0; a < num_threads; a++) pthread_create(&pt[a], NULL, TrainModelRegThread, (void *)a);
 //    for (int ep = 0; ep < epochs; ep++) {
 //        //TrainModelRegNCEThread(0);
-    for (a = 0; a < num_threads; a++) pthread_create(&pt[a], NULL, TrainModelRegNCEThread, (void *)a);
-    a = num_threads;
+
+    //TEST
+    //for (a = 0; a < num_threads; a++) pthread_create(&pt[a], NULL, TrainModelRegNCEThread, (void *)a);
+    //a = num_threads;
+    TrainModelRegNCEThread(0);
+    //TEST end
     //pthread_create(&pt[0], NULL, TrainModelRegNCEThread, (void *)0);
     //pthread_create(&pt[num_threads], NULL, TrainPPDBVectorThread, (void *)a);
-    for (a = num_threads; a < num_threads + num_thread_pmm; a++) pthread_create(&pt[a], NULL, TrainPPDBVectorThreadNew, (void *)a);
-    for (a = 0; a < num_threads; a++) pthread_join(pt[a], NULL);
-    for (a = num_threads; a < num_threads + num_thread_pmm; a++) pthread_cancel(pt[a]);
+
+    //TEST
+    //for (a = num_threads; a < num_threads + num_thread_pmm; a++) pthread_create(&pt[a], NULL, TrainPPDBVectorThreadNew, (void *)a);
+    //for (a = 0; a < num_threads; a++) pthread_join(pt[a], NULL);
+    //for (a = num_threads; a < num_threads + num_thread_pmm; a++) pthread_cancel(pt[a]);
+    //TEST End
 
 //    }
     //for (a = 0; a < num_threads; a++) pthread_create(&pt[a], NULL, TrainPPDBVectorThread, (void *)a);
