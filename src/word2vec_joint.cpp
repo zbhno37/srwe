@@ -1023,7 +1023,7 @@ void *TrainModelRegNCEThread(void *id) {
             if (feof(fi)) break;
             if (sentence_length == 0) continue;
             if (word_count > train_words / num_threads) break;
-            if (pp_count > train_pp_total / num_threads) break;
+            //if (pp_count > train_pp_total / num_threads) break;
             word = sen[sentence_position];
             if (word == -1) continue;
             for (c = 0; c < layer1_size; c++) neu1[c] = 0;
@@ -1103,9 +1103,19 @@ void *TrainModelRegNCEThread(void *id) {
                                     if (f > MAX_EXP) g = (label - 1) * lambda;
                                     else if (f < -MAX_EXP) g = (label - 0) * lambda;
                                     else g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * lambda;
+                                    // TODO
+                                    // baihan
+                                    // update syn0 (update word vector directly)
+
+                                    // neu1 here is
+                                    // lambda * (sigmoid - label) * theta
                                     for (c = 0; c < layer1_size; c++) neu1[c] += g * syn1neg[c + l2];
+                                    // semantic relation is symmetrical
+                                    // update theta itself
                                     for (c = 0; c < layer1_size; c++) syn1neg[c + l2] += g * syn1neg[c + l1];
                                 }
+                                // finally update accumulated sum
+                                // refer to the paper
                                 for (c = 0; c < layer1_size; c++) syn1neg[c + l1] += neu1[c];
                             }
                         }
@@ -1120,10 +1130,10 @@ void *TrainModelRegNCEThread(void *id) {
                 continue;
             }
         }
-        if((ep + 1) % 10 == 0 && id == 0) if (ppeval != NULL)
-        {
-            //evaluateMRRout(10000, ppeval);
-        }
+        //if((ep + 1) % 10 == 0 && id == 0) if (ppeval != NULL)
+        //{
+            ////evaluateMRRout(10000, ppeval);
+        //}
     }
 
     fclose(fi);
