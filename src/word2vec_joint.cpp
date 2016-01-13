@@ -27,6 +27,7 @@
 #include <pthread.h>
 #include <sstream>
 #include "Paraphrase.h"
+#include "RelationalData.h"
 // #include "EvaluationPP.h"
 
 
@@ -75,6 +76,7 @@ int weight_tying = 0;
 clock_t start;
 char train_file2[MAX_STRING];
 char pp_file[MAX_STRING];
+char relational_file[MAX_STRING];
 int word2vec = 1;
 int reg = 0;
 int reg_in = 0;
@@ -86,6 +88,7 @@ char pretrain_file[MAX_STRING];
 
 Paraphrase2* pp;
 Paraphrase* ppeval;
+RelationalData* rdata = NULL;
 //real lambda = 0.1;
 real lambda_in = 0.1;
 real lambda_out = 0.1;
@@ -246,7 +249,7 @@ void ReadWord(char *word, FILE *fin) {
 }
 
 // Returns hash value of a word
-int GetWordHash(char *word) {
+int GetWordHash(const char *word) {
     unsigned long long a, hash = 0;
     for (a = 0; a < strlen(word); a++) hash = hash * 257 + word[a];
     hash = hash % vocab_hash_size;
@@ -254,7 +257,7 @@ int GetWordHash(char *word) {
 }
 
 // Returns position of a word in the vocabulary; if the word is not found, returns -1
-int SearchVocab(char *word) {
+int SearchVocab(const char *word) {
     unsigned int hash = GetWordHash(word);
     while (1) {
         if (vocab_hash[hash] == -1) return -1;
@@ -273,7 +276,7 @@ int ReadWordIndex(FILE *fin) {
 }
 
 // Adds a word to the vocabulary
-int AddWordToVocab(char *word) {
+int AddWordToVocab(const char *word) {
     unsigned int hash, length = strlen(word) + 1;
     if (length > MAX_STRING) length = MAX_STRING;
     vocab[vocab_size].word = (char *)calloc(length, sizeof(char));
@@ -442,6 +445,19 @@ void LearnVocabFromTrainFile() {
         } else vocab[i].cn++;
         if (vocab_size > vocab_hash_size * 0.7) ReduceVocab();
     }
+
+    // RelationalData
+    if (rdata) {
+        for (auto &relation_word : rdata->relations) {
+            i = SearchVocab(relation_word.first.c_str());
+            if (i == -1) {
+                a = AddWordToVocab(relation_word.first.c_str());
+                vocab[a].cn = relation_word.second;
+            } else vocab[i].cn += relation_word.second;
+        }
+    }
+    // RelationData End
+
     SortVocab();
     if (debug_mode > 0) {
         printf("Vocab size: %lld\n", vocab_size);
@@ -932,7 +948,7 @@ void *TrainModelRegNCEThread(void *id) {
     long long word_count = 0, last_word_count = 0, sen[MAX_SENTENCE_LENGTH + 1];
     long long l1, l2, c, target, label;
     unsigned long long next_random = (long long)id;
-    long long word_actual_old = 0;
+    //long long word_actual_old = 0;
     //long long part = train_words / 10;
     real f, g;
     clock_t now;
@@ -959,7 +975,7 @@ void *TrainModelRegNCEThread(void *id) {
 
         while (1) {
             if (word_count - last_word_count > 10000) {
-                word_actual_old = word_count_actual;
+                //word_actual_old = word_count_actual;
                 word_count_actual += word_count - last_word_count;
                 //if (word_count_actual / part == word_actual_old / part + 1) {
                 //    evaluateMRRout(10000, ppeval);
@@ -1117,7 +1133,7 @@ void *TrainModelRegNCEThread(void *id) {
 }
 
 void *TrainPPDBVectorThread(void *id) {
-    long long b, d, word, last_word;
+    long long d, word, last_word;
     long long word_count = 0;
     long long l1, l2, c, target, label;
     unsigned long long next_random = (long long)id;
@@ -1183,7 +1199,7 @@ void *TrainPPDBVectorThread(void *id) {
             //evaluateMRRout(10000, ppeval);
         }
         //next_random = next_random * (unsigned long long)25214903917 + 11;
-        b = next_random % window;
+        //b = next_random % window;
     }
     //fclose(fi);
     //fclose(fo);
@@ -1194,7 +1210,7 @@ void *TrainPPDBVectorThread(void *id) {
 void *TrainPPDBVectorThreadNew(void *id) {
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-    long long b, d, word, last_word;
+    long long d, word, last_word;
     long long word_count = 0, last_word_count = 0;
     long long l1, l2, c, target, label;
     unsigned long long next_random = (long long)id;
@@ -1279,7 +1295,7 @@ void *TrainPPDBVectorThreadNew(void *id) {
             //evaluateMRRout(10000, ppeval);
         }
         //next_random = next_random * (unsigned long long)25214903917 + 11;
-        b = next_random % window;
+        //b = next_random % window;
     }
     //fclose(fi);
     //fclose(fo);
@@ -1334,6 +1350,18 @@ void TrainModel() {
     starting_alpha = alpha;
     starting_lambda = lambda;
     if (read_vocab_file[0] != 0) ReadVocab(); else LearnVocabFromTrainFile();
+    // RelationData Test
+    //if (rdata) {
+        //for (auto &relation_word : rdata->relations) {
+            //int i = SearchVocab(relation_word.first.c_str());
+            //if (i == -1) {
+                //cout << relation_word.first << " not exist." << endl;
+            //} else
+                //cout << relation_word.first << ":" << vocab[i].cn << endl;
+        //}
+    //}
+    //exit(1);
+    // RelationalData End
     if (save_vocab_file[0] != 0) SaveVocab();
     if (output_file[0] == 0) return;
     InitNet();
@@ -1472,6 +1500,8 @@ int main(int argc, char **argv) {
         //strcpy(pretrain_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.noreg.bin.oldtype");
         //strcpy(train_file2, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/trainword.new");
         epochs = 300;
+
+        strcpy(relational_file, "../../paper/data/srwe_model/freebase.10.relation");
     }
 
     else{
@@ -1526,6 +1556,16 @@ int main(int argc, char **argv) {
     //pp = new Paraphrase("/Users/gflfof/Desktop/new work/phrase_embedding/trunk/ppdb-1.0-s-lexical.wordlist1");
     //pp = new Paraphrase2("/Users/gflfof/Desktop/new work/phrase_embedding/trunk/ppdb-1.0-s-lexical.wordlist1");
     //lambda = 2;
+    rdata = new RelationalData(string(relational_file));
+
+    // RelationalData Test
+    //vector<string> test_word = {"google", "ipad", "wine"};
+    //for (auto &s : test_word) {
+        //for (auto &p : rdata->dataset[s])
+            //cout << s << "," << p.first << "," << p.second << ";";
+        //cout << endl;
+    //}
+    // Test End
 
     TrainModel();
     cout << endl;
