@@ -1109,14 +1109,17 @@ void *TrainModelRegNCEThread(void *id) {
 
                                     // neu1 here is
                                     // lambda * (sigmoid - label) * theta
-                                    for (c = 0; c < layer1_size; c++) neu1[c] += g * syn1neg[c + l2];
+                                    //for (c = 0; c < layer1_size; c++) neu1[c] += g * syn1neg[c + l2];
+                                    for (c = 0; c < layer1_size; c++) neu1[c] += g * syn0[c + l2];
                                     // semantic relation is symmetrical
                                     // update theta itself
-                                    for (c = 0; c < layer1_size; c++) syn1neg[c + l2] += g * syn1neg[c + l1];
+                                    //for (c = 0; c < layer1_size; c++) syn1neg[c + l2] += g * syn1neg[c + l1];
+                                    for (c = 0; c < layer1_size; c++) syn0[c + l2] += g * syn0[c + l1];
                                 }
                                 // finally update accumulated sum
                                 // refer to the paper
-                                for (c = 0; c < layer1_size; c++) syn1neg[c + l1] += neu1[c];
+                                //for (c = 0; c < layer1_size; c++) syn1neg[c + l1] += neu1[c];
+                                for (c = 0; c < layer1_size; c++) syn0[c + l1] += neu1[c];
                             }
                         }
                         //cout << endl;
