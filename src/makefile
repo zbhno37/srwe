@@ -9,8 +9,8 @@ all: word2vec_joint
 %.o : %.cpp
 	$(CC) -c $< -o $@ $(CFLAGS)
 
-word2vec_joint : word2vec_joint.cpp $(OBJS)
-	$(CC) word2vec_joint.cpp $(OBJS) -o word2vec_joint $(CFLAGS)
+word2vec_joint : Word2vec_joint.cpp $(OBJS)
+	$(CC) Word2vec_joint.cpp $(OBJS) -o word2vec_joint $(CFLAGS)
 
 clean:
 	rm -rf word2vec_joint *.o
