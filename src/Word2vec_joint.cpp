@@ -26,6 +26,7 @@
 #include <math.h>
 #include <pthread.h>
 #include <sstream>
+#include <iostream>
 #include "Paraphrase.h"
 #include "RelationalData.h"
 // #include "EvaluationPP.h"
@@ -80,7 +81,7 @@ char relational_file[MAX_STRING];
 int word2vec = 1;
 int reg = 0;
 int reg_in = 0;
-int reg_out = 0;
+int reg_out = 1;
 int epochs = 1;
 
 int pretrain = 0;
@@ -956,6 +957,7 @@ void *TrainModelRegNCEThread(void *id) {
     real *neu1e = (real *)calloc(layer1_size, sizeof(real));
     int pp_count = 0;
     int pp_last_count = 0;
+    long long update_pp_word_count = 0;
     int train_pp_total = epochs * pp->ppdict.size();
     FILE *fi = fopen(train_file, "rb");
     //FILE *fi = fopen("/Users/gflfof/Desktop/new work/phrase_embedding/trunk/trainword.txt", "rb");
@@ -969,7 +971,7 @@ void *TrainModelRegNCEThread(void *id) {
     //train_pp_total *= epochs;
     //train_pp_total *= 1;
     //file_size = ftell(fi);
-
+    cout << "reg_out:" << reg_out << ", negative:" << negative << endl;
     for (int ep = 0; ep < 1; ep++) {
         fseek(fi, file_size / (long long)num_threads * (long long)id, SEEK_SET);
 
@@ -983,24 +985,25 @@ void *TrainModelRegNCEThread(void *id) {
                 last_word_count = word_count;
                 if ((debug_mode > 1)) {
                     now=clock();
-                    printf("%cAlpha: %f  Progress: %.2f%%  Words/thread/sec: %.2fk  ", 13, alpha,
+                    printf("%cAlpha: %f  Progress: %.2f%%  Words/thread/sec: %.2fk  update pp count:%lld", 13, alpha,
                            word_count_actual / (real)(train_words + 1) * 100,
-                           word_count_actual / ((real)(now - start + 1) / (real)CLOCKS_PER_SEC * 1000));
+                           word_count_actual / ((real)(now - start + 1) / (real)CLOCKS_PER_SEC * 1000),
+                           update_pp_word_count);
                     fflush(stdout);
                 }
                 alpha = starting_alpha * (1 - word_count_actual / (real)(train_words + 1));
                 if (alpha < starting_alpha * 0.0001) alpha = starting_alpha * 0.0001;
             }
-            if (pp_count - pp_last_count >= 5000){
-                pp_count_actual += pp_count - pp_last_count;
-                pp_last_count = pp_count;
-                now=clock();
-                printf("%cLambda: %f  Progress: %.2f%%  Words/thread/sec: %.2fk  ", 13, lambda,
-                       pp_count_actual / (real)(train_pp_total + 1) * 100,
-                       pp_count_actual / ((real)(now - start + 1) / (real)CLOCKS_PER_SEC * 1000));
-                lambda = starting_lambda * (1 - pp_count_actual / (real)(train_pp_total + 1));
-                if (lambda < starting_lambda * 0.0001) lambda = starting_lambda * 0.0001;
-            }
+            //if (pp_count - pp_last_count >= 5000){
+                //pp_count_actual += pp_count - pp_last_count;
+                //pp_last_count = pp_count;
+                //now=clock();
+                //printf("%cLambda: %f  Progress: %.2f%%  Words/thread/sec: %.2fk  ", 13, lambda,
+                       //pp_count_actual / (real)(train_pp_total + 1) * 100,
+                       //pp_count_actual / ((real)(now - start + 1) / (real)CLOCKS_PER_SEC * 1000));
+                //lambda = starting_lambda * (1 - pp_count_actual / (real)(train_pp_total + 1));
+                //if (lambda < starting_lambda * 0.0001) lambda = starting_lambda * 0.0001;
+            //}
             if (sentence_length == 0) {
                 while (1) {
                     word = ReadWordIndex(fi);
@@ -1080,7 +1083,7 @@ void *TrainModelRegNCEThread(void *id) {
                             for(word2int::iterator iter = iter_pair->second.begin(); iter != iter_pair->second.end(); iter++){
                                 last_word = SearchVocab((char*)iter->first.c_str());
                                 if (last_word == -1) continue;
-
+                                update_pp_word_count += 1;
                                 l1 = last_word * layer1_size;
                                 for (c = 0; c < layer1_size; c++) neu1[c] = 0;
                                 // NEGATIVE SAMPLING // todo gradient
@@ -1109,17 +1112,17 @@ void *TrainModelRegNCEThread(void *id) {
 
                                     // neu1 here is
                                     // lambda * (sigmoid - label) * theta
-                                    //for (c = 0; c < layer1_size; c++) neu1[c] += g * syn1neg[c + l2];
-                                    for (c = 0; c < layer1_size; c++) neu1[c] += g * syn0[c + l2];
+                                    for (c = 0; c < layer1_size; c++) neu1[c] += g * syn1neg[c + l2];
+                                    //for (c = 0; c < layer1_size; c++) neu1[c] += g * syn0[c + l2];
                                     // semantic relation is symmetrical
                                     // update theta itself
-                                    //for (c = 0; c < layer1_size; c++) syn1neg[c + l2] += g * syn1neg[c + l1];
-                                    for (c = 0; c < layer1_size; c++) syn0[c + l2] += g * syn0[c + l1];
+                                    for (c = 0; c < layer1_size; c++) syn1neg[c + l2] += g * syn1neg[c + l1];
+                                    //for (c = 0; c < layer1_size; c++) syn0[c + l2] += g * syn0[c + l1];
                                 }
                                 // finally update accumulated sum
                                 // refer to the paper
-                                //for (c = 0; c < layer1_size; c++) syn1neg[c + l1] += neu1[c];
-                                for (c = 0; c < layer1_size; c++) syn0[c + l1] += neu1[c];
+                                for (c = 0; c < layer1_size; c++) syn1neg[c + l1] += neu1[c];
+                                //for (c = 0; c < layer1_size; c++) syn0[c + l1] += neu1[c];
                             }
                         }
                         //cout << endl;
@@ -1407,7 +1410,7 @@ void TrainModel() {
     //TrainModelRegNCEThread(0);
 
     fo = fopen(output_file, "wb");
-    printf("write to file:%s\n", output_file);
+    printf("\n\nwrite to file:%s\n", output_file);
     if (classes == 0) {
         // Save the word vectors
         fprintf(fo, "%lld %lld\n", vocab_size, layer1_size);
@@ -1447,7 +1450,7 @@ int main(int argc, char **argv) {
     save_vocab_file[0] = 0;
     read_vocab_file[0] = 0;
     reg_in = 0;
-    reg_out = 0;
+    reg_out = 1;
     if (argc == 1) {
         printf("WORD VECTOR estimation toolkit v 0.1b\n\n");
         printf("Options:\n");
@@ -1492,9 +1495,11 @@ int main(int argc, char **argv) {
         //strcpy(output_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.noreg.bin");
         //strcpy(output_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.noreg.bin.oldtype");
         //strcpy(train_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/text8.wordlist100");
-        strcpy(train_file, "../../paper/data/wiki/wiki_corpus");
+
+        //fileconfig
+        strcpy(train_file, "../../paper/data/wiki/wiki_corpus_small");
         //strcpy(output_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.regonly.bin");
-        strcpy(output_file, "../../paper/data/srwe_model/wiki_small.w2v.uw.model");
+        strcpy(output_file, "../../paper/data/srwe_model/wiki_small.w2v.ut.model");
         cbow = 1;
         layer1_size = 100;
         window = 5;
@@ -1515,8 +1520,8 @@ int main(int argc, char **argv) {
         weight_tying = 0;
         //strcpy(pp_file, "/Users/gflfof/Desktop/new work/phrase_embedding/PPDB/ppdb-1.0-s-lexical.wordlist100");
         strcpy(pp_file, "../../paper/data/srwe_model/semantic_pair");
-        reg_in = 0;
-        reg_out = 0;
+        reg_in = 1;
+        reg_out = 1;
         word2vec = 1;
         pretrain = 0;
         //strcpy(pretrain_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.noreg.bin.oldtype");
@@ -1572,6 +1577,7 @@ int main(int argc, char **argv) {
 
     //pp = new Paraphrase2("/Users/gflfof/Desktop/new work/phrase_embedding/PPDB/ppdb-1.0-s-lexical.wordlist100");
     pp = new Paraphrase2(pp_file);
+    cout << "pp.size:" << pp->ppdict.size() << endl;
     ppeval = NULL;
     //ppeval = new Paraphrase("/export/a04/moyu/gigaword_data/ppdb/new/ppdb-1.0-s-lexical.dev");
     //ppeval = new Paraphrase(pp_file);
