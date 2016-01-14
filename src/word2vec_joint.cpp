@@ -1142,7 +1142,8 @@ void *TrainModelRegNCEThread(void *id) {
     fclose(fi);
     free(neu1);
     free(neu1e);
-    pthread_exit(NULL);
+    // pthread_exit(NULL);
+    return 0;
 }
 
 void *TrainPPDBVectorThread(void *id) {
@@ -1358,7 +1359,7 @@ int LoadEmb(string modelname) {
 void TrainModel() {
     long a, b;
     FILE *fo;
-    pthread_t *pt = (pthread_t *)malloc((num_threads + num_thread_pmm) * sizeof(pthread_t));
+    //pthread_t *pt = (pthread_t *)malloc((num_threads + num_thread_pmm) * sizeof(pthread_t));
     printf("Starting training using file %s\n", train_file);
     starting_alpha = alpha;
     starting_lambda = lambda;
@@ -1406,6 +1407,7 @@ void TrainModel() {
     //TrainModelRegNCEThread(0);
 
     fo = fopen(output_file, "wb");
+    printf("write to file:%s\n", output_file);
     if (classes == 0) {
         // Save the word vectors
         fprintf(fo, "%lld %lld\n", vocab_size, layer1_size);
@@ -1490,9 +1492,9 @@ int main(int argc, char **argv) {
         //strcpy(output_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.noreg.bin");
         //strcpy(output_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.noreg.bin.oldtype");
         //strcpy(train_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/text8.wordlist100");
-        strcpy(train_file, "../../paper/data/wiki/wiki_corpus_small");
+        strcpy(train_file, "../../paper/data/wiki/wiki_corpus");
         //strcpy(output_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.regonly.bin");
-        strcpy(output_file, "../../paper/data/srwe_model/wiki_small.w2v.model");
+        strcpy(output_file, "../../paper/data/srwe_model/wiki_small.w2v.uw.model");
         cbow = 1;
         layer1_size = 100;
         window = 5;
