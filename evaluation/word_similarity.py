@@ -22,7 +22,8 @@ def load_standard(filename):
 def main():
     word_pair, simi = load_standard('./wordsim353_annotator1.txt')
     #model = load_w2v_model('../../paper/word2vec/vec.txt', logging)
-    model = load_w2v_model('../../paper/word2vec/wiki_small.w2v.model', logging)
+    model_path = '../../paper/data/srwe_model/wiki_small.w2v.uw.model'
+    model = load_w2v_model(model_path, logging)
     new_simi = []
     for pair in word_pair:
         if pair[0] not in model or pair[1] not in model:
@@ -30,6 +31,7 @@ def main():
             new_simi.append(0.0)
             continue
         new_simi.append(similarity(model[pair[0]], model[pair[1]]))
+    print model_path
     res = scipy.stats.spearmanr(simi, new_simi)
     print res
 
