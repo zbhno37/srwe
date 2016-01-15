@@ -436,8 +436,8 @@ void LearnVocabFromTrainFile() {
         if (feof(fin)) break;
         train_words++;
         if ((debug_mode > 1) && (train_words % 100000 == 0)) {
-            printf("%lldK%c", train_words / 1000, 13);
-            fflush(stdout);
+            //printf("%lldK%c", train_words / 1000, 13);
+            //fflush(stdout);
         }
         i = SearchVocab(word);
         if (i == -1) {
@@ -1075,6 +1075,7 @@ void *TrainModelRegNCEThread(void *id) {
                         for (c = 0; c < layer1_size; c++) syn0[c + last_word * layer1_size] += neu1e[c];
                     }
                 }
+                //ppconfig
                 if (reg_out) {
                     if(negative > 0){
                         word2dict::iterator iter_pair = pp->ppdict.find(vocab[word].word);
@@ -1117,7 +1118,11 @@ void *TrainModelRegNCEThread(void *id) {
                                     // semantic relation is symmetrical
                                     // update theta itself
                                     for (c = 0; c < layer1_size; c++) syn1neg[c + l2] += g * syn1neg[c + l1];
-                                    //for (c = 0; c < layer1_size; c++) syn0[c + l2] += g * syn0[c + l1];
+                                    //printf("c+l2:%lld, c+l1:%lld,g*syn0:%f,syn0:%f\r", c + l2, c + l1, g * syn1neg[c+l1], syn1neg[c+l2]);
+                                    //for (c = 0; c < layer1_size; c++) {
+                                        //printf("c+l2:%lld, c+l1:%lld,g*syn0:%llf,syn0:%llf\r", c + l2, c + l1, g * syn0[c+l1], syn0[c+l2]);
+                                        //syn0[c + l2] += g * syn0[c + l1];
+                                    //}
                                 }
                                 // finally update accumulated sum
                                 // refer to the paper
@@ -1601,7 +1606,6 @@ int main(int argc, char **argv) {
     cout << word_count_actual << endl;
     cout << lambda << endl;
     cout << pp_count_actual << endl;
-    //baihan
     //evaluateMRRout(10000, ppeval);
     //
     //
