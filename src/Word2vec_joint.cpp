@@ -65,6 +65,7 @@ long long train_words = 0, word_count_actual = 0, file_size = 0, classes = 0;
 long long pp_count_actual = 0;
 real alpha = 0.025, starting_alpha, sample = 0;
 real lambda = 0.1, starting_lambda;
+real gamma = 0.001;
 real *syn0;
 real *syn1, *syn1neg, *expTable;
 //real *A;
@@ -84,6 +85,7 @@ int reg_in = 0;
 int reg_out = 1;
 int epochs = 1;
 
+int use_relationl = 0;
 int pretrain = 0;
 char pretrain_file[MAX_STRING];
 
@@ -1134,6 +1136,55 @@ void *TrainModelRegNCEThread(void *id) {
                         pp_count++;
                     }
                 }
+                long long head_id, tail_id, relation_id;
+                if (use_relationl && negative > 0 and rdata != NULL) {
+                    unordered_map<string, vector<pair<string, string>>> &dataset = rdata->dataset;
+                    auto iter = dataset.find(string(vocab[word].word));
+                    if (iter != dataset.end()) {
+                        for (auto pair_iter = iter->second.begin(); pair_iter != iter->second.end(); pair_iter++) {
+                            head_id = SearchVocab(iter->first.c_str());
+                            relation_id = SearchVocab(pair_iter->first.c_str());
+                            tail_id = SearchVocab(pair_iter->second.c_str());
+                            if (head_id == -1 || relation_id == -1 || tail_id == -1) continue;
+                            l1 = head_id * layer1_size;
+                            // sum of h + r
+                            for (c = 0; c < layer1_size; c++) neu1[c] = 0;
+                            for (c = 0; c < layer1_size; c++) {
+                                // update word vector
+                                neu1[c] += syn0[c + head_id * layer1_size] + syn0[c + relation_id * layer1_size];
+                            }
+                            for (c = 0; c < layer1_size; c++) neu1e[c] = 0;
+                            // NEGATIVE SAMPLING
+                            // sample with tail
+                            if (negative > 0) for (d = 0; d < negative + 1; d++) {
+                                if (d == 0) {
+                                    target = tail_id;
+                                    label = 1;
+                                } else {
+                                    next_random = next_random * (unsigned long long)25214903917 + 11;
+                                    target = table[(next_random >> 16) % table_size];
+                                    if (target == 0) target = next_random % (vocab_size - 1) + 1;
+                                    if (target == tail_id) continue;
+                                    label = 0;
+                                }
+                                l2 = target * layer1_size;
+                                f = 0;
+                                for (c = 0; c < layer1_size; c++) f += neu1[c] * syn0[c + l2];
+                                //relationconfig
+                                if (f >  MAX_EXP) g = (label - 1) * gammma;
+                                else if (f < -MAX_EXP) g = (label - 0) * gamma;
+                                else g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * gamma;
+                                //accumulated tail words
+                                for (c = 1; c < layer1_size; c++)
+                                    neu1e[c] += g * neu1[c];
+                                //update h and r
+                                for (c = 1; c < layer1_size; c++)
+                                    neu1[c] = g * syn0[c + l2];
+                            }
+                            // update tail word itself
+                        }
+                    }
+                }
             }
             sentence_position++;
             if (sentence_position >= sentence_length) {
@@ -1504,7 +1555,7 @@ int main(int argc, char **argv) {
         //fileconfig
         strcpy(train_file, "../../paper/data/wiki/wiki_corpus_small");
         //strcpy(output_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.regonly.bin");
-        strcpy(output_file, "../../paper/data/srwe_model/wiki_small.w2v.ut.model");
+        strcpy(output_file, "../../paper/data/srwe_model/wiki_small.w2v.ut.ld0.0000005.model");
         cbow = 1;
         layer1_size = 100;
         window = 5;
@@ -1515,11 +1566,11 @@ int main(int argc, char **argv) {
         num_thread_pmm = 1;
         binary = 0;
         //lambda = 4;
-        lambda = 0.2;
+        //lambda = 0.2;
 
         //alpha = 0.005;
         //alpha = 0.025;
-        lambda = 0.005;
+        lambda = 0.0000005;
         //sample = 0;
 
         weight_tying = 0;
@@ -1604,7 +1655,7 @@ int main(int argc, char **argv) {
     cout << endl;
     cout << alpha << endl;
     cout << word_count_actual << endl;
-    cout << lambda << endl;
+    cout << "lambda:" << lambda << endl;
     cout << pp_count_actual << endl;
     //evaluateMRRout(10000, ppeval);
     //
