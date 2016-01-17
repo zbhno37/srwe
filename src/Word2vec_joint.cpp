@@ -1136,8 +1136,8 @@ void *TrainModelRegNCEThread(void *id) {
                         pp_count++;
                     }
                 }
-                long long head_id, tail_id, relation_id;
                 if (use_relationl && negative > 0 and rdata != NULL) {
+                    long long head_id, tail_id, relation_id;
                     unordered_map<string, vector<pair<string, string>>> &dataset = rdata->dataset;
                     auto iter = dataset.find(string(vocab[word].word));
                     if (iter != dataset.end()) {
@@ -1174,14 +1174,19 @@ void *TrainModelRegNCEThread(void *id) {
                                 if (f >  MAX_EXP) g = (label - 1) * gammma;
                                 else if (f < -MAX_EXP) g = (label - 0) * gamma;
                                 else g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * gamma;
-                                //accumulated tail words
-                                for (c = 1; c < layer1_size; c++)
-                                    neu1e[c] += g * neu1[c];
-                                //update h and r
-                                for (c = 1; c < layer1_size; c++)
-                                    neu1[c] = g * syn0[c + l2];
+                                //accumulated for e{h + r}
+                                for (c = 0; c < layer1_size; c++)
+                                    neu1e[c] += g * syn0[l2 + c];
+                                //update e{t}
+                                for (c = 0; c < layer1_size; c++) {
+                                    syn0[c + l2] += g * neu1[c];
+                                }
                             }
-                            // update tail word itself
+                            // update e{h} and e{r}
+                            for (c = 0; c < layer1_size; c++) {
+                                syn0[c + head_id * layer1_size] += neu1e[c];
+                                syn0[c + relation_id * layer1_size] += neu1e[c];
+                            }
                         }
                     }
                 }
