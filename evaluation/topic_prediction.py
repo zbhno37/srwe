@@ -87,7 +87,8 @@ def topic_prediction_with_relation(test_file, model):
     for topic in topic_list:
         prediction_res[topic] = {}
         prediction_res[topic]['correct'] = 0
-        prediction_res[topic]['total'] = 0
+        # 1 for smooth
+        prediction_res[topic]['total'] = 1
     model_items = model.items()
     line_count = 0
     with open(test_file) as fin:
