@@ -22,7 +22,7 @@ def load_standard(filename):
 def main():
     word_pair, simi = load_standard('./wordsim353_annotator1.txt')
     #model = load_w2v_model('../../paper/word2vec/vec.txt', logging)
-    model_path = '../../paper/data/srwe_model/wiki_small.w2v.uw.model'
+    model_path = '../../paper/data/srwe_model/wiki_small.w2v.r.0.001.model'
     model = load_w2v_model(model_path, logging)
     new_simi = []
     for pair in word_pair:
