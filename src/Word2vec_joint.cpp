@@ -65,7 +65,7 @@ long long train_words = 0, word_count_actual = 0, file_size = 0, classes = 0;
 long long pp_count_actual = 0;
 real alpha = 0.025, starting_alpha, sample = 0;
 real lambda = 0.1, starting_lambda;
-real gamma = 0.001;
+real gamma_value = 0.0001;
 real *syn0;
 real *syn1, *syn1neg, *expTable;
 //real *A;
@@ -85,7 +85,7 @@ int reg_in = 0;
 int reg_out = 1;
 int epochs = 1;
 
-int use_relationl = 0;
+int use_relationl = 1;
 int pretrain = 0;
 char pretrain_file[MAX_STRING];
 
@@ -438,8 +438,8 @@ void LearnVocabFromTrainFile() {
         if (feof(fin)) break;
         train_words++;
         if ((debug_mode > 1) && (train_words % 100000 == 0)) {
-            //printf("%lldK%c", train_words / 1000, 13);
-            //fflush(stdout);
+            printf("%lldK%c", train_words / 1000, 13);
+            fflush(stdout);
         }
         i = SearchVocab(word);
         if (i == -1) {
@@ -959,7 +959,7 @@ void *TrainModelRegNCEThread(void *id) {
     real *neu1e = (real *)calloc(layer1_size, sizeof(real));
     int pp_count = 0;
     int pp_last_count = 0;
-    long long update_pp_word_count = 0;
+    long long update_pp_word_count = 0, update_relation_word_count = 0;
     int train_pp_total = epochs * pp->ppdict.size();
     FILE *fi = fopen(train_file, "rb");
     //FILE *fi = fopen("/Users/gflfof/Desktop/new work/phrase_embedding/trunk/trainword.txt", "rb");
@@ -987,10 +987,10 @@ void *TrainModelRegNCEThread(void *id) {
                 last_word_count = word_count;
                 if ((debug_mode > 1)) {
                     now=clock();
-                    printf("%cAlpha: %f  Progress: %.2f%%  Words/thread/sec: %.2fk  update pp count:%lld", 13, alpha,
+                    printf("%cAlpha: %f  Progress: %.2f%%  Words/thread/sec: %.2fk  update pp count:%lld update relation count:%lld", 13, alpha,
                            word_count_actual / (real)(train_words + 1) * 100,
                            word_count_actual / ((real)(now - start + 1) / (real)CLOCKS_PER_SEC * 1000),
-                           update_pp_word_count);
+                           update_pp_word_count, update_relation_word_count);
                     fflush(stdout);
                 }
                 alpha = starting_alpha * (1 - word_count_actual / (real)(train_words + 1));
@@ -1136,6 +1136,8 @@ void *TrainModelRegNCEThread(void *id) {
                         pp_count++;
                     }
                 }
+
+                //relationconfig
                 if (use_relationl && negative > 0 and rdata != NULL) {
                     long long head_id, tail_id, relation_id;
                     unordered_map<string, vector<pair<string, string>>> &dataset = rdata->dataset;
@@ -1146,7 +1148,7 @@ void *TrainModelRegNCEThread(void *id) {
                             relation_id = SearchVocab(pair_iter->first.c_str());
                             tail_id = SearchVocab(pair_iter->second.c_str());
                             if (head_id == -1 || relation_id == -1 || tail_id == -1) continue;
-                            l1 = head_id * layer1_size;
+                            update_relation_word_count++;
                             // sum of h + r
                             for (c = 0; c < layer1_size; c++) neu1[c] = 0;
                             for (c = 0; c < layer1_size; c++) {
@@ -1170,10 +1172,9 @@ void *TrainModelRegNCEThread(void *id) {
                                 l2 = target * layer1_size;
                                 f = 0;
                                 for (c = 0; c < layer1_size; c++) f += neu1[c] * syn0[c + l2];
-                                //relationconfig
-                                if (f >  MAX_EXP) g = (label - 1) * gammma;
-                                else if (f < -MAX_EXP) g = (label - 0) * gamma;
-                                else g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * gamma;
+                                if (f >  MAX_EXP) g = (label - 1) * gamma_value;
+                                else if (f < -MAX_EXP) g = (label - 0) * gamma_value;
+                                else g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * gamma_value;
                                 //accumulated for e{h + r}
                                 for (c = 0; c < layer1_size; c++)
                                     neu1e[c] += g * syn0[l2 + c];
@@ -1560,7 +1561,7 @@ int main(int argc, char **argv) {
         //fileconfig
         strcpy(train_file, "../../paper/data/wiki/wiki_corpus_small");
         //strcpy(output_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.regonly.bin");
-        strcpy(output_file, "../../paper/data/srwe_model/wiki_small.w2v.ut.ld0.0000005.model");
+        strcpy(output_file, "../../paper/data/srwe_model/wiki_small.w2v.r.0.001.model");
         cbow = 1;
         layer1_size = 100;
         window = 5;
@@ -1575,7 +1576,8 @@ int main(int argc, char **argv) {
 
         //alpha = 0.005;
         //alpha = 0.025;
-        lambda = 0.0000005;
+        lambda = 0.00005;
+        gamma_value = 0.001;
         //sample = 0;
 
         weight_tying = 0;
