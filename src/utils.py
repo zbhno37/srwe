@@ -31,6 +31,12 @@ class MinSizeHeap:
     def sort(self):
         self.arr.sort(reverse=True)
 
+    def extend(self, heap):
+        #format
+        #[(value, title), ...]
+        for each in heap.arr:
+            self.push(each)
+
 def load_w2v_model(model_file, logging = None):
     model = {}
     total = 0
