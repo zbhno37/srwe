@@ -31,11 +31,17 @@ class MinSizeHeap:
     def sort(self):
         self.arr.sort(reverse=True)
 
-    def extend(self, heap):
+    def extend(self, arr):
         #format
         #[(value, title), ...]
-        for each in heap.arr:
+        for each in arr:
             self.push(each)
+
+    def clear(self):
+        del self.arr[:]
+
+    def get(self):
+        return self.arr
 
 def load_w2v_model(model_file, logging = None):
     model = {}

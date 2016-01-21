@@ -4,7 +4,13 @@ from utils import load_w2v_model, similarity, MinSizeHeap
 from collections import defaultdict
 import logging
 logging.basicConfig(format='%(asctime)s\t%(message)s', level=logging.INFO)
-from multiprocessing import Process
+from multiprocessing import Process, Manager
+from multiprocessing.managers import BaseManager
+
+class HeapManager(BaseManager):
+    pass
+
+HeapManager.register('MinSizeHeap', MinSizeHeap, exposed = ['push', 'pop', 'sort', 'extend', 'clear', 'get'])
 
 def add_vector(vec1, vec2):
     return [vec1[i] + vec2[i] for i in range(len(vec1))]
@@ -20,18 +26,17 @@ def find_similar_topics(vec, model, top_n = 1):
     heap.sort()
     return heap.arr
 
-def find_similar_word_process(vec, model_items, id, begin, end, top_n, heaps):
+def find_similar_word_process(vec, model_items, id, begin, end, top_n, heap):
+    heap.clear()
     if begin > len(model_items): return
     if end > len(model_items): end = len(model_items)
     for i in range(begin, end):
         if 'type_of_' not in model_items[i][0]:
-            heaps[id].push((similarity(vec, model_items[i][1]), model_items[i][0]))
-    #for each in heaps[id].arr:
+            heap.push((similarity(vec, model_items[i][1]), model_items[i][0]))
+    #for each in heap.get():
         #print '%d\t%s' % (id, each)
 
-def find_similar_word_multiproc(vec, model_items, top_n = 1, process_nums = 10):
-    heaps = [MinSizeHeap(top_n) for i in range(process_nums)]
-    #model_items = model.items()
+def find_similar_word_multiproc(vec, model_items, heaps, top_n = 1, process_nums = 10):
     size = len(model_items) / process_nums
     # seg_info
     # [a, b)
@@ -41,7 +46,7 @@ def find_similar_word_multiproc(vec, model_items, top_n = 1, process_nums = 10):
     seg_info.append(len(model_items))
     processes = []
     for i in range(process_nums):
-        processes.append(Process(target=find_similar_word_process, args=(vec, model_items, i, seg_info[i], seg_info[i + 1], top_n, heaps)))
+        processes.append(Process(target=find_similar_word_process, args=(vec, model_items, i, seg_info[i], seg_info[i + 1], top_n, heaps[i])))
     for p in processes:
         p.start()
     for p in processes:
@@ -49,8 +54,10 @@ def find_similar_word_multiproc(vec, model_items, top_n = 1, process_nums = 10):
     #merge
     heap = MinSizeHeap(top_n)
     for each in heaps:
-        heap.extend(each)
+        print each.get()
+        heap.extend(each.get())
     heap.sort()
+    print heap.arr
     return heap.arr
 
 def topic_prediction(test_file, train_file, model):
@@ -91,16 +98,28 @@ def topic_prediction_with_relation(test_file, model):
         prediction_res[topic]['total'] = 1
     model_items = model.items()
     line_count = 0
+    process_nums = 10
+    top_n = 3
+
+    heapManager = HeapManager()
+    heapManager.start()
+    heaps = [None] * process_nums
+    for i in range(process_nums):
+        heaps[i] = heapManager.MinSizeHeap(top_n)
+
     with open(test_file) as fin:
         for line in fin:
             #if line_count % 100 == 0:
             logging.info(line_count)
             line_count += 1
+            if line_count > 3: break
             h, r, t = line.strip().split('\t')
             if h not in model: continue
+            print '%s\t%s\t%s' % (h, r, t)
             h_r = add_vector(model[h], model[r])
             #candidates = find_similar_topics(h_r, model, top_n=3)
-            candidates = find_similar_word_multiproc(h_r, model_items, top_n=3, process_nums=10)
+            candidates = find_similar_word_multiproc(h_r, model_items, heaps=heaps, top_n=top_n, process_nums=process_nums)
+            print candidates
             for simi, topic in candidates:
                 if t == topic:
                     prediction_res[t]['correct'] += 1
