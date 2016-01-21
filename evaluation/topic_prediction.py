@@ -54,10 +54,8 @@ def find_similar_word_multiproc(vec, model_items, heaps, top_n = 1, process_nums
     #merge
     heap = MinSizeHeap(top_n)
     for each in heaps:
-        print each.get()
         heap.extend(each.get())
     heap.sort()
-    print heap.arr
     return heap.arr
 
 def topic_prediction(test_file, train_file, model):
@@ -115,11 +113,9 @@ def topic_prediction_with_relation(test_file, model):
             if line_count > 3: break
             h, r, t = line.strip().split('\t')
             if h not in model: continue
-            print '%s\t%s\t%s' % (h, r, t)
             h_r = add_vector(model[h], model[r])
             #candidates = find_similar_topics(h_r, model, top_n=3)
             candidates = find_similar_word_multiproc(h_r, model_items, heaps=heaps, top_n=top_n, process_nums=process_nums)
-            print candidates
             for simi, topic in candidates:
                 if t == topic:
                     prediction_res[t]['correct'] += 1
