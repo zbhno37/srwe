@@ -26,7 +26,8 @@ def find_similar_topics(vec, model, top_n = 1):
     heap.sort()
     return heap.arr
 
-def find_similar_word_process(vec, model_items, id, begin, end, top_n, heap):
+def find_similar_word_process(vec, model_items, _id, begin, end, top_n, heap):
+    logging.info(id(model_items))
     heap.clear()
     if begin > len(model_items): return
     if end > len(model_items): end = len(model_items)
@@ -34,7 +35,7 @@ def find_similar_word_process(vec, model_items, id, begin, end, top_n, heap):
         if 'type_of_' not in model_items[i][0]:
             heap.push((similarity(vec, model_items[i][1]), model_items[i][0]))
     #for each in heap.get():
-        #print '%d\t%s' % (id, each)
+        #print '%d\t%s' % (_id, each)
 
 def find_similar_word_multiproc(vec, model_items, heaps, top_n = 1, process_nums = 10):
     size = len(model_items) / process_nums
@@ -62,6 +63,7 @@ def topic_prediction(test_file, train_file, model):
     # train_file is to calculate relation vector
     k = len(model['</s>'])
     relation_count = defaultdict(lambda: 0)
+    logging.info('calculating relation vectors...')
     with open(train_file) as fin:
         for line in fin:
             h, r, t = line.strip().split('\t')

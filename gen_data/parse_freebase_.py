@@ -196,13 +196,13 @@ def aggregate_topic(path):
         "interests",
         "language",
     ]
-    fout = file('../../paper/data/srwe_model/freebase.10.relation', 'w')
+    fout = file('../../paper/data/srwe_model/freebase.100.relation', 'w')
     for topic in target_topic:
         log('processing %s' % topic)
         with open(os.path.join(path, topic)) as fin:
             for line in fin:
                 arr = line.strip().split('\t')
-                if int(arr[2]) <= 5: continue
+                if int(arr[2]) <= 100: continue
                 fout.write('%s\t%s\t%s\n' % (arr[1], 'type_of_%s' % topic, topic))
     fout.close()
 
