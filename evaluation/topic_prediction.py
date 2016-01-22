@@ -27,7 +27,6 @@ def find_similar_topics(vec, model, top_n = 1):
     return heap.arr
 
 def find_similar_word_process(vec, model_items, _id, begin, end, top_n, heap):
-    logging.info(id(model_items))
     heap.clear()
     if begin > len(model_items): return
     if end > len(model_items): end = len(model_items)
@@ -112,7 +111,6 @@ def topic_prediction_with_relation(test_file, model):
             #if line_count % 100 == 0:
             logging.info(line_count)
             line_count += 1
-            if line_count > 3: break
             h, r, t = line.strip().split('\t')
             if h not in model: continue
             h_r = add_vector(model[h], model[r])
