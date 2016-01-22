@@ -23,7 +23,7 @@ def sample_all(filename):
 
 def sample_by_relation(filename):
     logging.info('split_train_test_data:sample_by_relation: %s' % filename)
-    test_percentage = 30
+    test_percentage = 20
     fout_train = file('%s.train' % filename, 'w')
     fout_test = file('%s.test' % filename, 'w')
     count = 0

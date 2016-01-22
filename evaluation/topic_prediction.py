@@ -4,7 +4,7 @@ from utils import load_w2v_model, similarity, MinSizeHeap
 from collections import defaultdict
 import logging
 logging.basicConfig(format='%(asctime)s\t%(message)s', level=logging.INFO)
-from multiprocessing import Process, Manager
+from multiprocessing import Process
 from multiprocessing.managers import BaseManager
 
 class HeapManager(BaseManager):
@@ -127,12 +127,16 @@ def topic_prediction_with_relation(test_file, model):
     return prediction_res
 
 def main():
+    has_relation = False
     model_path = '../../paper/data/srwe_model/wiki_small.w2v.model'
     logging.info('loading model...')
     model = load_w2v_model(model_path, logging)
-    train_file = '../../paper/data/srwe_model/freebase.10.relation'
-    test_file = '../../paper/data/srwe_model/freebase.computer.relation.test'
-    prediction_res = topic_prediction(test_file, train_file, model)
+    train_file = '../../paper/data/srwe_model/freebase.100.relation.train'
+    test_file = '../../paper/data/srwe_model/freebase.100.relation.test'
+    if has_relation:
+        prediction_res = topic_prediction_with_relation(test_file, model)
+    else:
+        prediction_res = topic_prediction(test_file, train_file, model)
     for topic in prediction_res:
         res = prediction_res[topic]
         print 'correct:%d, total:%d, correct rate:%lf' % (res['correct'],
