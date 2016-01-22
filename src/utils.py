@@ -1,5 +1,7 @@
 import heapq
 import math
+import numpy as np
+import scipy.spatial
 
 def similarity(v1, v2):
     inner = sum([v1[i] * v2[i] for i in range(len(v1))])
@@ -9,6 +11,8 @@ def similarity(v1, v2):
         return -1
     return inner * 1.0 / (sum1 * sum2)
 
+def similarity_numpy(v1, v2):
+    return 1 - scipy.spatial.distance.cosine(v1, v2)
 
 class MinSizeHeap:
     def __init__(self, size):
@@ -43,7 +47,7 @@ class MinSizeHeap:
     def get(self):
         return self.arr
 
-def load_w2v_model(model_file, logging = None):
+def load_w2v_model(model_file, logging = None, nparray = False):
     model = {}
     total = 0
     vector_size = 0
@@ -54,7 +58,8 @@ def load_w2v_model(model_file, logging = None):
         count = 0
         for line in fin:
             line = line.strip().split(' ')
-            model[line[0]] = map(lambda x: float(x), line[1:])
+            vec = map(lambda x: float(x), line[1:])
+            model[line[0]] = np.array(vec) if nparray else vec
             if count % 10000 == 0 and logging:
                 logging.info('loading %d / %d\r' % (count, total))
             count += 1
