@@ -156,8 +156,8 @@ def find_similar_word_partly_proc(_id, topic_list, filename, model, begin, end, 
             if line_count < begin: continue
             if line_count >= end: break
             process_line += 1
-            if process_line > 10: break
-            if process_line % 1 == 0:
+            #if process_line > 10: break
+            if process_line % 10 == 0:
                 logging.info('process %d:%d:%lf%%' % (_id, process_line, 1.0 * process_line / (end - begin) * 100))
             h, r, t = line.strip().split('\t')
             if h not in model: continue
@@ -188,7 +188,7 @@ def find_similar_word_partly_proc(_id, topic_list, filename, model, begin, end, 
 
 def topic_prediction_with_relation_multiproc(test_file, model):
     total = 0
-    process_nums = 3
+    process_nums = 10
     top_n = 5
     logging.info('geting line count...')
     total, topic_list = get_lc_and_relation(test_file)
