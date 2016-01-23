@@ -13,8 +13,8 @@ class HeapManager(BaseManager):
 HeapManager.register('MinSizeHeap', MinSizeHeap, exposed = ['push', 'pop', 'sort', 'extend', 'clear', 'get'])
 
 def add_vector(vec1, vec2):
-    #return [vec1[i] + vec2[i] for i in range(len(vec1))]
-    return vec1 + vec2
+    return [vec1[i] + vec2[i] for i in range(len(vec1))]
+    #return vec1 + vec2
 
 def minus_vector(vec1, vec2):
     #return [vec1[i] - vec2[i] for i in range(len(vec1))]
@@ -24,8 +24,8 @@ def find_similar_topics(vec, model, top_n = 1):
     heap = MinSizeHeap(top_n)
     for word in model:
         if 'type_of_' not in word:
-            #heap.push((similarity(vec, model[word]), word))
-            heap.push((similarity_numpy(vec, model[word]), word))
+            heap.push((similarity(vec, model[word]), word))
+            #heap.push((similarity_numpy(vec, model[word]), word))
         heap.sort()
     return heap.arr
 
@@ -161,8 +161,8 @@ def find_similar_word_partly_proc(_id, topic_list, filename, model, begin, end, 
                 logging.info('process %d:%d:%lf%%' % (_id, process_line, 1.0 * process_line / (end - begin) * 100))
             h, r, t = line.strip().split('\t')
             if h not in model: continue
-            #h_r = add_vector(model[h], model[r])
-            h_r = model[h] + model[r]
+            h_r = add_vector(model[h], model[r])
+            #h_r = model[h] + model[r]
             candidates = find_similar_topics(h_r, model, top_n=top_n)
             for i, each in enumerate(candidates):
                 simi, topic = each
@@ -206,7 +206,7 @@ def topic_prediction_with_relation_multiproc(test_file, model):
             count_dicts[i]['%s_1' % topic] = 0
             count_dicts[i]['%s_3' % topic] = 0
             count_dicts[i]['%s_5' % topic] = 0
-            count_dicts[i]['%s_0' % topic] = 1
+            count_dicts[i]['%s_0' % topic] = 0
     processes = []
     for i in range(process_nums):
         processes.append(Process(target=find_similar_word_partly_proc, args=(i, topic_list, test_file, model, seg_info[i], seg_info[i + 1], count_dicts[i], top_n)))
@@ -228,6 +228,10 @@ def topic_prediction_with_relation_multiproc(test_file, model):
             for i in [0, 1, 3, 5]:
                 key = '%s_%d' % (topic, i)
                 prediction_res[topic][i] += count_dict[key]
+
+    for topic in topic_list:
+        if prediction_res[topic][0] == 0:
+            prediction_res[topic][0] = 1
     return prediction_res
 
 def main():
@@ -235,7 +239,7 @@ def main():
     model_path = '../../paper/data/srwe_model/wiki_small.w2v.model'
     #model_path = '../../paper/data/srwe_model/wiki_small.w2v.model'
     logging.info('loading model...')
-    model = load_w2v_model(model_path, logging, nparray=True)
+    model = load_w2v_model(model_path, logging, nparray=False)
     train_file = '../../paper/data/srwe_model/freebase.100.relation.train'
     test_file = '../../paper/data/srwe_model/freebase.100.relation.test'
     if has_relation:
