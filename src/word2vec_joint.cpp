@@ -85,7 +85,8 @@ int reg_in = 0;
 int reg_out = 1;
 int epochs = 1;
 
-int use_relationl = 1;
+int use_relational = 1;
+int use_pp = 1;
 int pretrain = 0;
 char pretrain_file[MAX_STRING];
 
@@ -437,8 +438,8 @@ void LearnVocabFromTrainFile() {
         ReadWord(word, fin);
         if (feof(fin)) break;
         train_words++;
-        if ((debug_mode > 1) && (train_words % 100000 == 0)) {
-            printf("%lldK%c", train_words / 1000, 13);
+        if ((debug_mode > 1) && (train_words % 1000000 == 0)) {
+            printf("%lldK%c", train_words / 1000, '\n');
             fflush(stdout);
         }
         i = SearchVocab(word);
@@ -978,7 +979,7 @@ void *TrainModelRegNCEThread(void *id) {
         fseek(fi, file_size / (long long)num_threads * (long long)id, SEEK_SET);
 
         while (1) {
-            if (word_count - last_word_count > 10000) {
+            if (word_count - last_word_count > 500000) {
                 //word_actual_old = word_count_actual;
                 word_count_actual += word_count - last_word_count;
                 //if (word_count_actual / part == word_actual_old / part + 1) {
@@ -987,7 +988,7 @@ void *TrainModelRegNCEThread(void *id) {
                 last_word_count = word_count;
                 if ((debug_mode > 1)) {
                     now=clock();
-                    printf("%cAlpha: %f  Progress: %.2f%%  Words/thread/sec: %.2fk  update pp count:%lld update relation count:%lld", 13, alpha,
+                    printf("%cAlpha: %f  Progress: %.2f%%  Words/thread/sec: %.2fk  update pp count:%lld update relation count:%lld", '\n', alpha,
                            word_count_actual / (real)(train_words + 1) * 100,
                            word_count_actual / ((real)(now - start + 1) / (real)CLOCKS_PER_SEC * 1000),
                            update_pp_word_count, update_relation_word_count);
@@ -1138,7 +1139,7 @@ void *TrainModelRegNCEThread(void *id) {
                 }
 
                 //relationconfig
-                if (use_relationl && negative > 0 and rdata != NULL) {
+                if (use_relational && negative > 0 and rdata != NULL) {
                     long long head_id, tail_id, relation_id;
                     unordered_map<string, vector<pair<string, string>>> &dataset = rdata->dataset;
                     auto iter = dataset.find(string(vocab[word].word));
@@ -1153,7 +1154,8 @@ void *TrainModelRegNCEThread(void *id) {
                             for (c = 0; c < layer1_size; c++) neu1[c] = 0;
                             for (c = 0; c < layer1_size; c++) {
                                 // update word vector
-                                neu1[c] += syn0[c + head_id * layer1_size] + syn0[c + relation_id * layer1_size];
+                                //neu1[c] += syn0[c + head_id * layer1_size] + syn0[c + relation_id * layer1_size];
+                                neu1[c] += syn1neg[c + head_id * layer1_size] + syn1neg[c + relation_id * layer1_size];
                             }
                             for (c = 0; c < layer1_size; c++) neu1e[c] = 0;
                             // NEGATIVE SAMPLING
@@ -1171,22 +1173,27 @@ void *TrainModelRegNCEThread(void *id) {
                                 }
                                 l2 = target * layer1_size;
                                 f = 0;
-                                for (c = 0; c < layer1_size; c++) f += neu1[c] * syn0[c + l2];
+                                //for (c = 0; c < layer1_size; c++) f += neu1[c] * syn0[c + l2];
+                                for (c = 0; c < layer1_size; c++) f += neu1[c] * syn1neg[c + l2];
                                 if (f >  MAX_EXP) g = (label - 1) * gamma_value;
                                 else if (f < -MAX_EXP) g = (label - 0) * gamma_value;
                                 else g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * gamma_value;
                                 //accumulated for e{h + r}
                                 for (c = 0; c < layer1_size; c++)
-                                    neu1e[c] += g * syn0[l2 + c];
+                                    //neu1e[c] += g * syn0[l2 + c];
+                                    neu1e[c] += g * syn1neg[l2 + c];
                                 //update e{t}
                                 for (c = 0; c < layer1_size; c++) {
-                                    syn0[c + l2] += g * neu1[c];
+                                    //syn0[c + l2] += g * neu1[c];
+                                    syn1neg[c + l2] += g * neu1[c];
                                 }
                             }
                             // update e{h} and e{r}
                             for (c = 0; c < layer1_size; c++) {
-                                syn0[c + head_id * layer1_size] += neu1e[c];
-                                syn0[c + relation_id * layer1_size] += neu1e[c];
+                                //syn0[c + head_id * layer1_size] += neu1e[c];
+                                //syn0[c + relation_id * layer1_size] += neu1e[c];
+                                syn1neg[c + head_id * layer1_size] += neu1e[c];
+                                syn1neg[c + relation_id * layer1_size] += neu1e[c];
                             }
                         }
                     }
@@ -1513,7 +1520,37 @@ int main(int argc, char **argv) {
     read_vocab_file[0] = 0;
     reg_in = 0;
     reg_out = 1;
-    if (argc == 1) {
+    if (argc != 1) {
+        if ((i = ArgPos((char *)"-size", argc, argv)) > 0) layer1_size = atoi(argv[i + 1]);
+        if ((i = ArgPos((char *)"-epochs", argc, argv)) > 0) epochs = atoi(argv[i + 1]);
+        if ((i = ArgPos((char *)"-train", argc, argv)) > 0) strcpy(train_file, argv[i + 1]);
+        if ((i = ArgPos((char *)"-train2", argc, argv)) > 0) strcpy(train_file2, argv[i + 1]);
+        if ((i = ArgPos((char *)"-save-vocab", argc, argv)) > 0) strcpy(save_vocab_file, argv[i + 1]);
+        if ((i = ArgPos((char *)"-read-vocab", argc, argv)) > 0) strcpy(read_vocab_file, argv[i + 1]);
+        if ((i = ArgPos((char *)"-debug", argc, argv)) > 0) debug_mode = atoi(argv[i + 1]);
+        if ((i = ArgPos((char *)"-binary", argc, argv)) > 0) binary = atoi(argv[i + 1]);
+        if ((i = ArgPos((char *)"-cbow", argc, argv)) > 0) cbow = atoi(argv[i + 1]);
+        if ((i = ArgPos((char *)"-alpha", argc, argv)) > 0) alpha = atof(argv[i + 1]);
+        if ((i = ArgPos((char *)"-output", argc, argv)) > 0) strcpy(output_file, argv[i + 1]);
+        if ((i = ArgPos((char *)"-window", argc, argv)) > 0) window = atoi(argv[i + 1]);
+        if ((i = ArgPos((char *)"-sample", argc, argv)) > 0) sample = atof(argv[i + 1]);
+        if ((i = ArgPos((char *)"-hs", argc, argv)) > 0) hs = atoi(argv[i + 1]);
+        if ((i = ArgPos((char *)"-negative", argc, argv)) > 0) negative = atoi(argv[i + 1]);
+        if ((i = ArgPos((char *)"-weight-tying", argc, argv)) > 0) weight_tying = atoi(argv[i + 1]);
+        if ((i = ArgPos((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);
+        if ((i = ArgPos((char *)"-thread-pmm", argc, argv)) > 0) num_thread_pmm = atoi(argv[i + 1]);
+        if ((i = ArgPos((char *)"-min-count", argc, argv)) > 0) min_count = atoi(argv[i + 1]);
+        if ((i = ArgPos((char *)"-classes", argc, argv)) > 0) classes = atoi(argv[i + 1]);
+        if ((i = ArgPos((char *)"-regin", argc, argv)) > 0) reg_in = atoi(argv[i + 1]);
+        if ((i = ArgPos((char *)"-regout", argc, argv)) > 0) reg_out = atoi(argv[i + 1]);
+        if ((i = ArgPos((char *)"-ppfile", argc, argv)) > 0) strcpy(pp_file, argv[i + 1]);
+        if ((i = ArgPos((char *)"-lambda", argc, argv)) > 0) lambda = atof(argv[i + 1]);
+        if ((i = ArgPos((char *)"-semdim", argc, argv)) > 0) sem_dim = atoi(argv[i + 1]);
+        if ((i = ArgPos((char *)"-word2vec", argc, argv)) > 0) word2vec = atoi(argv[i + 1]);
+        if ((i = ArgPos((char *)"-pretrain", argc, argv)) > 0) pretrain = atoi(argv[i + 1]);
+        if ((i = ArgPos((char *)"-pretrain-file", argc, argv)) > 0) strcpy(pretrain_file, argv[i + 1]);
+    }
+    else{
         printf("WORD VECTOR estimation toolkit v 0.1b\n\n");
         printf("Options:\n");
         printf("Parameters for training:\n");
@@ -1553,15 +1590,13 @@ int main(int argc, char **argv) {
         printf("\nExamples:\n");
         printf("./word2vec -train data.txt -output vec.txt -debug 2 -size 200 -window 5 -sample 1e-4 -negative 5 -hs 0 -binary 0 -cbow 1\n\n");
 
-        //strcpy(train_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/text8.wordlist1.small");
-        //strcpy(output_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.noreg.bin");
-        //strcpy(output_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.noreg.bin.oldtype");
-        //strcpy(train_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/text8.wordlist100");
-
         //fileconfig
         strcpy(train_file, "../../paper/data/wiki/wiki_corpus_small");
-        //strcpy(output_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.regonly.bin");
-        strcpy(output_file, "../../paper/data/srwe_model/wiki_small.w2v.r.0.001.model");
+        strcpy(output_file, "../../paper/data/srwe_model/wiki_small.w2v.r.0.00001.model");
+        strcpy(pp_file, "../../paper/data/srwe_model/semantic_pair");
+        strcpy(relational_file, "../../paper/data/srwe_model/freebase.100.relation.train");
+        use_relational = 1;
+        use_pp = 1;
         cbow = 1;
         layer1_size = 100;
         window = 5;
@@ -1571,65 +1606,21 @@ int main(int argc, char **argv) {
         num_threads = 1;
         num_thread_pmm = 1;
         binary = 0;
-        //lambda = 4;
-        //lambda = 0.2;
-
-        //alpha = 0.005;
-        //alpha = 0.025;
         lambda = 0.00005;
-        gamma_value = 0.001;
-        //sample = 0;
+        gamma_value = 0.00001;
 
         weight_tying = 0;
-        //strcpy(pp_file, "/Users/gflfof/Desktop/new work/phrase_embedding/PPDB/ppdb-1.0-s-lexical.wordlist100");
-        strcpy(pp_file, "../../paper/data/srwe_model/semantic_pair");
         reg_in = 1;
         reg_out = 1;
         word2vec = 1;
         pretrain = 0;
-        //strcpy(pretrain_file, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.noreg.bin.oldtype");
-        //strcpy(train_file2, "/Users/gflfof/Desktop/new work/phrase_embedding/trunk/trainword.new");
         epochs = 300;
-
-        strcpy(relational_file, "../../paper/data/srwe_model/freebase.10.relation");
-    }
-
-    else{
-        if ((i = ArgPos((char *)"-size", argc, argv)) > 0) layer1_size = atoi(argv[i + 1]);
-        if ((i = ArgPos((char *)"-epochs", argc, argv)) > 0) epochs = atoi(argv[i + 1]);
-        if ((i = ArgPos((char *)"-train", argc, argv)) > 0) strcpy(train_file, argv[i + 1]);
-        if ((i = ArgPos((char *)"-train2", argc, argv)) > 0) strcpy(train_file2, argv[i + 1]);
-        if ((i = ArgPos((char *)"-save-vocab", argc, argv)) > 0) strcpy(save_vocab_file, argv[i + 1]);
-        if ((i = ArgPos((char *)"-read-vocab", argc, argv)) > 0) strcpy(read_vocab_file, argv[i + 1]);
-        if ((i = ArgPos((char *)"-debug", argc, argv)) > 0) debug_mode = atoi(argv[i + 1]);
-        if ((i = ArgPos((char *)"-binary", argc, argv)) > 0) binary = atoi(argv[i + 1]);
-        if ((i = ArgPos((char *)"-cbow", argc, argv)) > 0) cbow = atoi(argv[i + 1]);
-        if ((i = ArgPos((char *)"-alpha", argc, argv)) > 0) alpha = atof(argv[i + 1]);
-        if ((i = ArgPos((char *)"-output", argc, argv)) > 0) strcpy(output_file, argv[i + 1]);
-        if ((i = ArgPos((char *)"-window", argc, argv)) > 0) window = atoi(argv[i + 1]);
-        if ((i = ArgPos((char *)"-sample", argc, argv)) > 0) sample = atof(argv[i + 1]);
-        if ((i = ArgPos((char *)"-hs", argc, argv)) > 0) hs = atoi(argv[i + 1]);
-        if ((i = ArgPos((char *)"-negative", argc, argv)) > 0) negative = atoi(argv[i + 1]);
-        if ((i = ArgPos((char *)"-weight-tying", argc, argv)) > 0) weight_tying = atoi(argv[i + 1]);
-        if ((i = ArgPos((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);
-        if ((i = ArgPos((char *)"-thread-pmm", argc, argv)) > 0) num_thread_pmm = atoi(argv[i + 1]);
-        if ((i = ArgPos((char *)"-min-count", argc, argv)) > 0) min_count = atoi(argv[i + 1]);
-        if ((i = ArgPos((char *)"-classes", argc, argv)) > 0) classes = atoi(argv[i + 1]);
-        if ((i = ArgPos((char *)"-regin", argc, argv)) > 0) reg_in = atoi(argv[i + 1]);
-        if ((i = ArgPos((char *)"-regout", argc, argv)) > 0) reg_out = atoi(argv[i + 1]);
-        if ((i = ArgPos((char *)"-ppfile", argc, argv)) > 0) strcpy(pp_file, argv[i + 1]);
-        if ((i = ArgPos((char *)"-lambda", argc, argv)) > 0) lambda = atof(argv[i + 1]);
-        if ((i = ArgPos((char *)"-semdim", argc, argv)) > 0) sem_dim = atoi(argv[i + 1]);
-        if ((i = ArgPos((char *)"-word2vec", argc, argv)) > 0) word2vec = atoi(argv[i + 1]);
-        if ((i = ArgPos((char *)"-pretrain", argc, argv)) > 0) pretrain = atoi(argv[i + 1]);
-        if ((i = ArgPos((char *)"-pretrain-file", argc, argv)) > 0) strcpy(pretrain_file, argv[i + 1]);
     }
 
     if (sem_dim == 0) {
         sem_dim = layer1_size;
     }
     pp_count_actual = 0;
-
     vocab = (struct vocab_word *)calloc(vocab_max_size, sizeof(struct vocab_word));
     vocab_hash = (int *)calloc(vocab_hash_size, sizeof(int));
     expTable = (real *)malloc((EXP_TABLE_SIZE + 1) * sizeof(real));
@@ -1637,42 +1628,16 @@ int main(int argc, char **argv) {
         expTable[i] = exp((i / (real)EXP_TABLE_SIZE * 2 - 1) * MAX_EXP); // Precompute the exp() table
         expTable[i] = expTable[i] / (expTable[i] + 1);                   // Precompute f(x) = x / (x + 1)
     }
-
-    //pp = new Paraphrase2("/Users/gflfof/Desktop/new work/phrase_embedding/PPDB/ppdb-1.0-s-lexical.wordlist100");
     pp = new Paraphrase2(pp_file);
     cout << "pp.size:" << pp->ppdict.size() << endl;
     ppeval = NULL;
-    //ppeval = new Paraphrase("/export/a04/moyu/gigaword_data/ppdb/new/ppdb-1.0-s-lexical.dev");
-    //ppeval = new Paraphrase(pp_file);
-    //pp = new Paraphrase("/Users/gflfof/Desktop/new work/phrase_embedding/trunk/ppdb-1.0-s-lexical.wordlist1");
-    //pp = new Paraphrase2("/Users/gflfof/Desktop/new work/phrase_embedding/trunk/ppdb-1.0-s-lexical.wordlist1");
-    //lambda = 2;
     rdata = new RelationalData(string(relational_file));
-
-    // RelationalData Test
-    //vector<string> test_word = {"google", "ipad", "wine"};
-    //for (auto &s : test_word) {
-        //for (auto &p : rdata->dataset[s])
-            //cout << s << "," << p.first << "," << p.second << ";";
-        //cout << endl;
-    //}
-    // Test End
-
     TrainModel();
     cout << endl;
     cout << alpha << endl;
     cout << word_count_actual << endl;
     cout << "lambda:" << lambda << endl;
     cout << pp_count_actual << endl;
-    //evaluateMRRout(10000, ppeval);
-    //
-    //
-    //Paraphrase* ppeval = new Paraphrase("/Users/gflfof/Desktop/new work/phrase_embedding/PPDB/ppdb-1.0-s-lexical.wordlist100");
-    //Paraphrase* ppeval = new Paraphrase("/Users/gflfof/Desktop/new work/phrase_embedding/PPDB/ppdb-1.0-s-lexical.wordlist100");
-    //evaluate("/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist100.noreg", 10000, pp);
-    //evaluateMRR("/Users/gflfof/Desktop/new work/phrase_embedding/trunk/vector.wordlist1.noreg", 10000, ppeval);
-    //evaluateMRR(output_file, 10000, ppeval);
-    //evaluateMRR(output_file, 10000, pp);
     delete pp;
     pp = NULL;
     return 0;
