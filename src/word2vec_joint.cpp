@@ -538,6 +538,80 @@ void InitNet() {
     CreateBinaryTree();
 }
 
+void *TrainRelationVectorThread(void *id){
+    //relationconfig
+    if (use_relational && negative > 0 and rdata != NULL) {
+        long long head_id, tail_id, relation_id;
+        long long update_relation_word_count = 0;
+        long long c, d, target, label, l2;
+        unsigned long long next_random = (long long)id;
+        real f, g;
+        real *neu1 = (real *)calloc(layer1_size, sizeof(real));
+        real *neu1e = (real *)calloc(layer1_size, sizeof(real));
+        unordered_map<string, vector<pair<string, string>>> &dataset = rdata->dataset;
+        for (int ep = 0; ep < epochs; ep++) {
+            printf("TrainRelationVectorThread: ep:%d, update_relation_word_count:%lld\n", ep, update_relation_word_count);
+            for (auto iter = dataset.begin(); iter != dataset.end(); iter++) {
+                for (auto pair_iter = iter->second.begin(); pair_iter != iter->second.end(); pair_iter++) {
+                    head_id = SearchVocab(iter->first.c_str());
+                    relation_id = SearchVocab(pair_iter->first.c_str());
+                    tail_id = SearchVocab(pair_iter->second.c_str());
+                    if (head_id == -1 || relation_id == -1 || tail_id == -1) continue;
+                    update_relation_word_count++;
+                    // sum of h + r
+                    for (c = 0; c < layer1_size; c++) neu1[c] = 0;
+                    for (c = 0; c < layer1_size; c++) {
+                        // update word vector
+                        neu1[c] += syn0[c + head_id * layer1_size] + syn0[c + relation_id * layer1_size];
+                        //neu1[c] += syn1neg[c + head_id * layer1_size] + syn1neg[c + relation_id * layer1_size];
+                    }
+                    for (c = 0; c < layer1_size; c++) neu1e[c] = 0;
+                    // NEGATIVE SAMPLING
+                    // sample with tail
+                    if (negative > 0) for (d = 0; d < negative + 1; d++) {
+                        if (d == 0) {
+                            target = tail_id;
+                            label = 1;
+                        } else {
+                            next_random = next_random * (unsigned long long)25214903917 + 11;
+                            target = table[(next_random >> 16) % table_size];
+                            if (target == 0) target = next_random % (vocab_size - 1) + 1;
+                            if (target == tail_id) continue;
+                            label = 0;
+                        }
+                        l2 = target * layer1_size;
+                        f = 0;
+                        for (c = 0; c < layer1_size; c++) f += neu1[c] * syn0[c + l2];
+                        //for (c = 0; c < layer1_size; c++) f += neu1[c] * syn1neg[c + l2];
+                        if (f >  MAX_EXP) g = (label - 1) * gamma_value;
+                        else if (f < -MAX_EXP) g = (label - 0) * gamma_value;
+                        else g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * gamma_value;
+                        //accumulated for e{h + r}
+                        for (c = 0; c < layer1_size; c++)
+                            neu1e[c] += g * syn0[l2 + c];
+                            //neu1e[c] += g * syn1neg[l2 + c];
+                        //update e{t}
+                        for (c = 0; c < layer1_size; c++) {
+                            syn0[c + l2] += g * neu1[c];
+                            //syn1neg[c + l2] += g * neu1[c];
+                        }
+                    }
+                    // update e{h} and e{r}
+                    for (c = 0; c < layer1_size; c++) {
+                        syn0[c + head_id * layer1_size] += neu1e[c];
+                        syn0[c + relation_id * layer1_size] += neu1e[c];
+                        //syn1neg[c + head_id * layer1_size] += neu1e[c];
+                        //syn1neg[c + relation_id * layer1_size] += neu1e[c];
+                    }
+                }
+            }
+        }
+        free(neu1);
+        free(neu1e);
+    }
+    return 0;
+}
+
 void *TrainModelRegThread(void *id) {
     long long a, b, d, word, last_word, sentence_length = 0, sentence_position = 0;
     long long word_count = 0, last_word_count = 0, sen[MAX_SENTENCE_LENGTH + 1];
@@ -959,12 +1033,12 @@ void *TrainModelRegNCEThread(void *id) {
     real *neu1 = (real *)calloc(layer1_size, sizeof(real));
     real *neu1e = (real *)calloc(layer1_size, sizeof(real));
     int pp_count = 0;
-    int pp_last_count = 0;
+    //int pp_last_count = 0;
     long long update_pp_word_count = 0, update_relation_word_count = 0;
-    int train_pp_total = epochs * pp->ppdict.size();
+    //int train_pp_total = epochs * pp->ppdict.size();
     FILE *fi = fopen(train_file, "rb");
     //FILE *fi = fopen("/Users/gflfof/Desktop/new work/phrase_embedding/trunk/trainword.txt", "rb");
-    train_pp_total = 0;
+    //train_pp_total = 0;
 //    while (1) {
 //        word = ReadWordIndex(fi);
 //        if (word != 0) train_pp_total++;
@@ -1154,8 +1228,8 @@ void *TrainModelRegNCEThread(void *id) {
                             for (c = 0; c < layer1_size; c++) neu1[c] = 0;
                             for (c = 0; c < layer1_size; c++) {
                                 // update word vector
-                                //neu1[c] += syn0[c + head_id * layer1_size] + syn0[c + relation_id * layer1_size];
-                                neu1[c] += syn1neg[c + head_id * layer1_size] + syn1neg[c + relation_id * layer1_size];
+                                neu1[c] += syn0[c + head_id * layer1_size] + syn0[c + relation_id * layer1_size];
+                                //neu1[c] += syn1neg[c + head_id * layer1_size] + syn1neg[c + relation_id * layer1_size];
                             }
                             for (c = 0; c < layer1_size; c++) neu1e[c] = 0;
                             // NEGATIVE SAMPLING
@@ -1173,27 +1247,27 @@ void *TrainModelRegNCEThread(void *id) {
                                 }
                                 l2 = target * layer1_size;
                                 f = 0;
-                                //for (c = 0; c < layer1_size; c++) f += neu1[c] * syn0[c + l2];
-                                for (c = 0; c < layer1_size; c++) f += neu1[c] * syn1neg[c + l2];
+                                for (c = 0; c < layer1_size; c++) f += neu1[c] * syn0[c + l2];
+                                //for (c = 0; c < layer1_size; c++) f += neu1[c] * syn1neg[c + l2];
                                 if (f >  MAX_EXP) g = (label - 1) * gamma_value;
                                 else if (f < -MAX_EXP) g = (label - 0) * gamma_value;
                                 else g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * gamma_value;
                                 //accumulated for e{h + r}
                                 for (c = 0; c < layer1_size; c++)
-                                    //neu1e[c] += g * syn0[l2 + c];
-                                    neu1e[c] += g * syn1neg[l2 + c];
+                                    neu1e[c] += g * syn0[l2 + c];
+                                    //neu1e[c] += g * syn1neg[l2 + c];
                                 //update e{t}
                                 for (c = 0; c < layer1_size; c++) {
-                                    //syn0[c + l2] += g * neu1[c];
-                                    syn1neg[c + l2] += g * neu1[c];
+                                    syn0[c + l2] += g * neu1[c];
+                                    //syn1neg[c + l2] += g * neu1[c];
                                 }
                             }
                             // update e{h} and e{r}
                             for (c = 0; c < layer1_size; c++) {
-                                //syn0[c + head_id * layer1_size] += neu1e[c];
-                                //syn0[c + relation_id * layer1_size] += neu1e[c];
-                                syn1neg[c + head_id * layer1_size] += neu1e[c];
-                                syn1neg[c + relation_id * layer1_size] += neu1e[c];
+                                syn0[c + head_id * layer1_size] += neu1e[c];
+                                syn0[c + relation_id * layer1_size] += neu1e[c];
+                                //syn1neg[c + head_id * layer1_size] += neu1e[c];
+                                //syn1neg[c + relation_id * layer1_size] += neu1e[c];
                             }
                         }
                     }
@@ -1463,6 +1537,7 @@ void TrainModel() {
     //for (a = 0; a < num_threads; a++) pthread_create(&pt[a], NULL, TrainModelRegNCEThread, (void *)a);
     //a = num_threads;
     TrainModelRegNCEThread(0);
+    TrainRelationVectorThread(0);
     //TEST end
     //pthread_create(&pt[0], NULL, TrainModelRegNCEThread, (void *)0);
     //pthread_create(&pt[num_threads], NULL, TrainPPDBVectorThread, (void *)a);
@@ -1592,7 +1667,7 @@ int main(int argc, char **argv) {
 
         //fileconfig
         strcpy(train_file, "../../paper/data/wiki/wiki_corpus_small");
-        strcpy(output_file, "../../paper/data/srwe_model/wiki_small.w2v.r.0.00001.model");
+        strcpy(output_file, "../../paper/data/srwe_model/wiki_small.w2v.r.0.00001.update_word.train_relation.model");
         strcpy(pp_file, "../../paper/data/srwe_model/semantic_pair");
         strcpy(relational_file, "../../paper/data/srwe_model/freebase.100.relation.train");
         use_relational = 1;
