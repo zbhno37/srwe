@@ -1,0 +1,9 @@
+Business	Business Day	Global Business	Business	International Business
+Sports	Sports	Baseball	Pro Basketball	Soccer	Tennis
+Politics	Politics
+Arts	Arts	Art & Design
+Technology	Technology
+Style	Fashion & Style	Style
+Health	Health
+Science	Science
+Entertainment	Music	Movies
