@@ -1,5 +1,8 @@
 from collections import defaultdict
-
+import sys
+sys.path.append('../../evaluation/')
+sys.path.append('../../src/')
+from text_classification import clean_text
 
 def count_category():
     category_count = defaultdict(lambda: 0)
@@ -13,6 +16,19 @@ def count_category():
     for category, count in sorted_category:
         print category, count
 
+def count_category_and_char():
+    category_count = defaultdict(lambda: 0)
+    category_word_count = defaultdict(lambda: 0)
+    with open('./news_corpus') as fin:
+        for line in fin:
+            arr = line.strip().split('\t')
+            category_count[arr[1]] += 1
+            #category_word_count[arr[1]] += len(clean_text(arr[0].decode('utf-8')))
+    sorted_category = sorted(category_count.items(), key=lambda x: x[1], reverse=True)
+    #print ' & '.join(map(lambda x: '%d' % x[1], sorted_category))
+    for category, count in sorted_category:
+        print '\\hline'
+        print '%s & %d \\\\' % (category, count)
 
 def load_category(filename):
     category_map = {}
@@ -41,4 +57,5 @@ def extract_news():
     fout.close()
 
 if __name__ == '__main__':
-    extract_news()
+    #extract_news()
+    count_category_and_char()

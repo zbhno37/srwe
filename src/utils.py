@@ -54,6 +54,7 @@ def load_w2v_model(model_file, logging = None, nparray = False):
     with open(model_file) as fin:
         total, vector_size = map(lambda x: int(x), fin.readline().strip().split(' '))
         if logging:
+            logging.info('load vector from: %s' % model_file)
             logging.info('total:%d, vector_size:%d' % (total, vector_size))
         count = 0
         for line in fin:
